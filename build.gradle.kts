@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream
 
 plugins {
     application
+    scala
     alias(libs.plugins.gitSemVer)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.qa)
@@ -13,16 +14,6 @@ plugins {
 
 repositories {
     mavenCentral()
-}
-/*
- * Only required if you plan to use Protelis, remove otherwise
- */
-sourceSets {
-    main {
-        resources {
-            srcDir("src/main/protelis")
-        }
-    }
 }
 
 val usesJvm: Int = File(File(projectDir, "docker/sim"), "Dockerfile")
@@ -40,7 +31,7 @@ multiJvm {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation(libs.bundles.alchemist.protelis)
+    implementation(libs.bundles.alchemist)
     if (!GraphicsEnvironment.isHeadless()) {
         implementation("it.unibo.alchemist:alchemist-swingui:${libs.versions.alchemist.get()}")
     }
