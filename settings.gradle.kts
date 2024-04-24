@@ -11,4 +11,4 @@ develocity {
     }
 }
 
-rootProject.name = "alchemist-experiments-bootstrap"
+rootProject.name = "experiments-2024-ACSOS-multi-tier-field-based-applications"
