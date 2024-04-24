@@ -1,0 +1,81 @@
+incarnation: scafi
+
+variables:
+  seed: &seed
+    min: 0
+    max: 1
+    step: 1
+    default: 0
+  range: &range
+    formula: 500.0
+  moveFrequency: &moveFrequency
+    formula: 1.0 / 2
+    language: scala
+  nodeCount: &nodeCount
+    type: ArbitraryVariable
+    parameters: [100, [100, 500, 1000]]
+
+seeds:
+  scenario: *seed
+  simulation: *seed
+
+network-model:
+  type: ThreeTierConnection #*connectionType
+  parameters: [*range]
+
+_reproduceGpsTrace: &ReproduceGPSTrace
+  type: GPSTraceWalker
+  parameters: ["vcmuser.gpx", false, AlignToTime, [1365922800, false, false]]
+
+_programs:
+  - program: &emergencyService
+    - time-distribution: 1
+      type: Event
+      actions:
+        - type: RunScafiProgram
+          parameters: [it.unibo.modularization.EmergencyService]
+  - program: send
+
+  - program: &moveWithTraces
+    - time-distribution: *moveFrequency
+      type: Event
+      actions:
+        - *ReproduceGPSTrace
+
+environment:
+  type: OSMEnvironment
+  parameters: ["vcm.pbf", false]
+
+deployments:
+  - type: SpecificPositions # Edge Servers
+    parameters: [
+      [ 48.2152226, 16.3816613 ],
+      [ 48.2366507, 16.3838339 ],
+      [ 48.2146077, 16.3485146 ],
+      [ 48.2055562, 16.3778687 ],
+      [ 48.1924837, 16.3458967 ],
+      [ 48.1879776, 16.3616896 ],
+      [ 48.1728973, 16.3443303 ],
+    ]
+    contents:
+      - molecule: EdgeServer
+        concentration: true
+
+  - type: SpecificPositions # Cloud Instance
+    parameters: [[ 48.3081743, 16.4736189 ]]
+    contents:
+      - molecule: CloudInstance
+        concentration: true
+
+  - type: FromGPSTrace
+    parameters: [ *nodeCount, "vcmuser.gpx", false, AlignToTime, 1365922800, false, false ]
+    programs:
+      - *emergencyService
+      - *moveWithTraces
+    contents:
+      - molecule: WearableDevice
+        concentration: true
+
+terminate:
+  type: AfterTime
+  parameters: 1800
