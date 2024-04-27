@@ -1,3 +1,32 @@
+## 1.0.0 (2024-04-27)
+
+
+### Features
+
+* setup experiment repository ([853e37b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/853e37b8f13882a9f81f1e4d9ca2df56ac8391c2))
+* setup network connection and node spreading ([5d6274d](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/5d6274d389b13e208c385add300f7a454bfb5790))
+
+
+### Dependency updates
+
+* **deps:** add alchemist maps dependency ([0870669](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/0870669ce24db85cd59704cfe1ef447698eb45b8))
+* **deps:** update alchemist to v33.1.0 ([749a52b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/749a52b42625e7b2aea58d6401a35174a4a0110a))
+
+
+### Build and continuous integration
+
+* **deps:** update actions/checkout action to v4.1.4 ([ef587c4](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/ef587c42a8c6d2a88439f45a9ea6d273f140685e))
+* **deps:** update actions/download-artifact action to v4.1.7 ([f1c601f](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/f1c601f3acbadad4d5b3765da8e5e150363bb513))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v2.4.17 ([c69b8f5](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/c69b8f5e45fe7f671b5662429c7830c8719138ba))
+
+
+### General maintenance
+
+* change effect color ([44fb088](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/44fb08862501cc1559c19c464291daccc558390d))
+* change renovate base config ([348d8d0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/348d8d01768b87b68ca578d4515dbf59ce9baa8d))
+* make lowercase project name ([05750fe](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/05750fecc2759120db41531afb16a761f63d56ee))
+* manage machinery fro simulation ([ad888ec](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/ad888ec295cdd0aba6ce689dcc282f9261914f58))
+
 ## [1.2.1](https://github.com/DanySK/alchemist-experiments-bootstrap/compare/1.2.0...1.2.1) (2024-02-09)
 
 
