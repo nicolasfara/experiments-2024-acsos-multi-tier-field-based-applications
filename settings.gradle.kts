@@ -11,4 +11,4 @@ develocity {
     }
 }
 
-rootProject.name = "experiments-2024-ACSOS-multi-tier-field-based-applications"
+rootProject.name = "experiments-2024-acsos-multi-tier-field-based-applications"
