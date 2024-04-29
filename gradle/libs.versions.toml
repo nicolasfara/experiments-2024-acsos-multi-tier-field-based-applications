@@ -1,15 +1,19 @@
 [versions]
 alchemist = "33.1.0"
 kotlin = "1.9.23"
+scalacache = "0.28.0"
 
 [libraries]
 alchemist = { module = "it.unibo.alchemist:alchemist", version.ref = "alchemist" }
 alchemist-maps = { module = "it.unibo.alchemist:alchemist-maps", version.ref = "alchemist" }
 alchemist-scafi = { module = "it.unibo.alchemist:alchemist-incarnation-scafi", version.ref = "alchemist" }
 resourceloader = "org.danilopianini:thread-inheritable-resource-loader:0.3.6"
+scalacache-core = { module = "com.github.cb372:scalacache-core_2.13", version.ref = "scalacache" }
+scalacache-guava = { module = "com.github.cb372:scalacache-guava_2.13", version.ref = "scalacache" }
 
 [bundles]
 alchemist = [ "alchemist", "alchemist-scafi", "alchemist-maps", "resourceloader" ]
+scalacache = [ "scalacache-core", "scalacache-guava" ]
 
 [plugins]
 gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version = "3.1.4" }

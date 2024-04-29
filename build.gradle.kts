@@ -32,6 +32,7 @@ multiJvm {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(libs.bundles.alchemist)
+    implementation(libs.bundles.scalacache)
     if (!GraphicsEnvironment.isHeadless()) {
         implementation("it.unibo.alchemist:alchemist-swingui:${libs.versions.alchemist.get()}")
     }
