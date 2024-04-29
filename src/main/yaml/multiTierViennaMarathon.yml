@@ -36,7 +36,7 @@ _programs:
         actions:
           - type: RunSurrogateScafiProgram
             parameters: [ it.unibo.modularization.EmergencyService ]
-  - program: send
+  - program: sendSurrogate
 
   - program: &emergencyService
     - time-distribution:
