@@ -6,26 +6,31 @@ import it.unibo.alchemist.model.{Environment, LinkingRule, Neighborhood, Node, P
 
 import scala.jdk.CollectionConverters._
 
-import java.util
-
-class ThreeTierConnection[T, P <: Position[P]](
-    private val range: Double
-) extends LinkingRule[T, P] {
+class ThreeTierConnection[T, P <: Position[P]](private val range: Double) extends LinkingRule[T, P] {
 
   override def computeNeighborhood(center: Node[T], environment: Environment[T, P]): Neighborhood[T] = {
-    val wearableNodes = environment.getNodes.stream().filter(_.contains(new SimpleMolecule("WearableDevice"))).toList.asScala
-    val edgeServersNodes = environment.getNodes.stream().filter(_.contains(new SimpleMolecule("EdgeServer"))).toList.asScala
-    val cloudNodes = environment.getNodes.stream().filter(_.contains(new SimpleMolecule("CloudInstance"))).toList.asScala
+    val wearableNodes =
+      environment.getNodes.stream().filter(_.contains(new SimpleMolecule("WearableDevice"))).toList.asScala
+    val edgeServersNodes =
+      environment.getNodes.stream().filter(_.contains(new SimpleMolecule("EdgeServer"))).toList.asScala
+    val cloudNodes =
+      environment.getNodes.stream().filter(_.contains(new SimpleMolecule("CloudInstance"))).toList.asScala
 
     if (center.contains(new SimpleMolecule("WearableDevice"))) {
-      val nearest = environment.getNodesWithinRange(center, range).stream().toList.asScala
+      val nearestEdgeServer = edgeServersNodes
+        .map(n => n -> environment.getDistanceBetweenNodes(center, n))
+        .minByOption(_._2) match {
+        case Some((node, _)) => node
+        case None            => throw new IllegalStateException("No edge server found")
+      }
+      val nearest = environment.getNodesWithinRange(center, range).stream().toList.asScala :+ nearestEdgeServer
       Neighborhoods.make(environment, center, (nearest ++ cloudNodes).asJava)
     } else if (center.contains(new SimpleMolecule("EdgeServer"))) {
       Neighborhoods.make(environment, center, (cloudNodes ++ edgeServersNodes).asJava)
     } else {
-        Neighborhoods.make(environment, center, (edgeServersNodes ++ wearableNodes ++ cloudNodes).asJava)
+      Neighborhoods.make(environment, center, (wearableNodes ++ edgeServersNodes ++ cloudNodes).asJava)
     }
   }
 
-  override def isLocallyConsistent: Boolean = false
+  override def isLocallyConsistent: Boolean = true
 }

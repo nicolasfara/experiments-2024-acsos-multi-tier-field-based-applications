@@ -47,6 +47,12 @@ environment:
   parameters: ["vcm.pbf", false]
 
 deployments:
+  - type: SpecificPositions # Cloud Instance
+    parameters: [ [ 48.3081743, 16.4736189 ] ]
+    contents:
+      - molecule: CloudInstance
+        concentration: true
+
   - type: SpecificPositions # Edge Servers
     parameters: [
       [ 48.2152226, 16.3816613 ],
@@ -59,12 +65,6 @@ deployments:
     ]
     contents:
       - molecule: EdgeServer
-        concentration: true
-
-  - type: SpecificPositions # Cloud Instance
-    parameters: [[ 48.3081743, 16.4736189 ]]
-    contents:
-      - molecule: CloudInstance
         concentration: true
 
   - type: FromGPSTrace
