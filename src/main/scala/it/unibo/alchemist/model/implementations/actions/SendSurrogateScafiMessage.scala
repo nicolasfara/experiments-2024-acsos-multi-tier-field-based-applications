@@ -44,14 +44,17 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
     )
 
   override def execute(): Unit = {
-    program
-      .isSurrogateFor()
-      .foreach(nodeId => {
-        for {
-          toSend <- program.getComputedResultFor(nodeId)
-          localProgram <- getLocalProgramForNode(nodeId)
-        } yield localProgram.sendExport(nodeId, toSend)
-      })
+    /*
+     * Rationale: I need to send back the computed result to the original node since the other `send` will propagate
+     * the the neighbors not managed by this device.
+     * This is the case when the physical neighborhood is not fully offloaded to this device.
+     */
+    program.isSurrogateFor.foreach(nodeId => {
+      for {
+        toSend <- program.getComputedResultFor(nodeId)
+        localProgram <- getLocalProgramForNode(nodeId)
+      } yield localProgram.sendExport(nodeId, toSend)
+    })
     program.prepareForComputationalCycle()
   }
 
@@ -62,44 +65,8 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
       action <- reactions.getActions.asScala
     } yield action match {
       case prog: RunScafiProgram[T, P] => if (program.programNameMolecule == prog.programNameMolecule) prog else null
-      case _ => null
+      case _                           => null
     }
     localPrograms.filter(_ != null).find(action => action.nodeManager.node.getId == nodeId)
   }
-
-//  /** Get the surrogate programs running on behalf of the neighbors of the device.
-//    * @return
-//    *   the list of surrogate programs running on behalf of the neighbors of the device.
-//    */
-//  private def neighborsExecutingOnSurrogatesFor(nodeId: ID): List[RunSurrogateScafiProgram[T, P]] = {
-//    val surrogateActions = for {
-//      node <- environment.getNodesAsScala
-//      reactions <- node.getReactions.asScala
-//      action <- reactions.getActions.asScala
-//    } yield action match {
-//      case prog: RunSurrogateScafiProgram[T, P] =>
-//        if (program.programNameMolecule == prog.programNameMolecule) prog else null
-//      case _ => null
-//    }
-//    val neighborsId = environment.getNeighborhood(environment.getNodeByID(nodeId)).asScala.map(_.getId)
-//    surrogateActions.filter(_ != null).filter(action => neighborsId.exists(action.isSurrogateForNode))
-//  }
-//
-//  /** Get the neighbors of the device that are executing the program on the local device.
-//    * @return
-//    *   the list of neighbors of the device that are executing the program on the local device.
-//    */
-//  private def neighborsExecutingOnLocalDeviceFor(nodeId: ID): List[RunScafiProgram[T, P]] = {
-//    val localActions = for {
-//      node <- environment.getNodesAsScala
-//      reactions <- node.getReactions.asScala
-//      action <- reactions.getActions.asScala
-//    } yield action match {
-//      case prog: RunScafiProgram[T, P] =>
-//        if (program.programNameMolecule == prog.programNameMolecule) prog else null
-//      case _ => null
-//    }
-//    val neighborsId = environment.getNeighborhood(environment.getNodeByID(nodeId)).asScala.map(_.getId)
-//    localActions.filter(_ != null).filter(action => neighborsId.exists(_ == action.nodeManager.node.getId))
-//  }
 }
