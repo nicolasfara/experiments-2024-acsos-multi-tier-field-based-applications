@@ -6,9 +6,10 @@ kotlin = "1.9.23"
 alchemist = { module = "it.unibo.alchemist:alchemist", version.ref = "alchemist" }
 alchemist-maps = { module = "it.unibo.alchemist:alchemist-maps", version.ref = "alchemist" }
 alchemist-scafi = { module = "it.unibo.alchemist:alchemist-incarnation-scafi", version.ref = "alchemist" }
+resourceloader = "org.danilopianini:thread-inheritable-resource-loader:0.3.6"
 
 [bundles]
-alchemist = [ "alchemist", "alchemist-scafi", "alchemist-maps" ]
+alchemist = [ "alchemist", "alchemist-scafi", "alchemist-maps", "resourceloader" ]
 
 [plugins]
 gitSemVer = { id = "org.danilopianini.git-sensitive-semantic-versioning", version = "3.1.4" }
