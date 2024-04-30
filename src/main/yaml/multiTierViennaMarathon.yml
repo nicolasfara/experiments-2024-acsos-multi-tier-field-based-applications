@@ -56,7 +56,7 @@ environment:
 
 deployments:
   - type: SpecificPositions # Cloud Instance
-    parameters: [ [ 48.3081743, 16.4736189 ] ]
+    parameters: [[ 48.3081743, 16.4736189 ]]
     programs:
       - *surrogateEmergencyService
     contents:

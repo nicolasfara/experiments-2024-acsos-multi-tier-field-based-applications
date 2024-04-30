@@ -1,6 +1,6 @@
 package it.unibo.alchemist.model.implementations.actions
 
-import it.unibo.alchemist.model.{Node, Position, Reaction, ScafiIncarnationUtils}
+import it.unibo.alchemist.model.{Node, Position, Reaction}
 import it.unibo.alchemist.model.ScafiIncarnationUtils._
 import it.unibo.alchemist.model.implementations.nodes.ScafiDevice
 import it.unibo.alchemist.model._
@@ -9,7 +9,7 @@ import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist.ID
 import it.unibo.utils.ScalaJavaInterop.EnvironmentOps
 
 import java.util.stream.Collectors
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, IterableHasAsScala}
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class SendSurrogateScafiMessage[T, P <: Position[P]](
     environment: Environment[T, P],
