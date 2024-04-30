@@ -9,7 +9,7 @@ package it.unibo.alchemist.model
 
 import it.unibo.alchemist.model.ScafiIncarnationUtils._
 import it.unibo.alchemist.model.implementations.actions.{RunScafiProgram, RunSurrogateScafiProgram, SendScafiMessage, SendSurrogateScafiMessage}
-import it.unibo.alchemist.model.implementations.conditions.ScafiComputationalRoundComplete
+import it.unibo.alchemist.model.implementations.conditions.{ScafiComputationalRoundComplete, ScafiSurrogateComputationalRoundComplete}
 import it.unibo.alchemist.model.implementations.nodes.ScafiDevice
 import it.unibo.alchemist.model.molecules.SimpleMolecule
 import it.unibo.alchemist.model.nodes.GenericNode
@@ -74,7 +74,7 @@ sealed class ScafiIncarnation[T, P <: Position[P]] extends Incarnation[T, P] {
         val alreadyDone = ScafiIncarnationUtils
           .allActions[T, P, SendSurrogateScafiMessage[T, P]](node, classOf[SendSurrogateScafiMessage[T, P]])
           .map(_.program)
-        val scafiSurrogateProgramsList = ScafiIncarnationUtils.allSurrogateScafiProgramsFor[T, P](node)
+        val scafiSurrogateProgramsList = ScafiSurrogateIncarnationUtils.allSurrogateScafiProgramsFor[T, P](node)
         scafiSurrogateProgramsList --= alreadyDone
         if (scafiSurrogateProgramsList.isEmpty) {
           throw new IllegalStateException(
@@ -121,31 +121,56 @@ sealed class ScafiIncarnation[T, P <: Position[P]] extends Incarnation[T, P] {
       time: TimeDistribution[T],
       reaction: Actionable[T],
       parameters: Any
-  ): Condition[T] = runInScafiDeviceContext[T, Condition[T]](
-    node,
-    message = s"The node must have a ${classOf[ScafiDevice[_]].getSimpleName} property",
-    device => {
-      val alreadyDone = ScafiIncarnationUtils
-        .allConditionsFor(node, classOf[ScafiComputationalRoundComplete[T]])
-        .map(_.asInstanceOf[ScafiComputationalRoundComplete[T]])
-        .map(_.program.asInstanceOf[RunScafiProgram[T, P]])
-      val scafiProgramList: mutable.Buffer[RunScafiProgram[T, P]] = ScafiIncarnationUtils.allScafiProgramsFor(node)
-      scafiProgramList --= alreadyDone
-      if (scafiProgramList.isEmpty) {
-        throw new IllegalStateException(
-          "There is no program requiring a " +
-            classOf[ScafiComputationalRoundComplete[_]].getSimpleName + " condition"
-        )
+  ): Condition[T] = {
+    runInScafiDeviceContext[T, Condition[T]](
+      node,
+      message = s"The node must have a ${classOf[ScafiDevice[_]].getSimpleName} property",
+      device => {
+        val isSurrogate = node.getReactions.asScala.flatMap(_.getActions.asScala).exists(_.isInstanceOf[RunSurrogateScafiProgram[_, _]])
+        if (isSurrogate) {
+          val alreadyDone = ScafiIncarnationUtils
+            .allConditionsFor(node, classOf[ScafiSurrogateComputationalRoundComplete[T]])
+            .map(_.asInstanceOf[ScafiSurrogateComputationalRoundComplete[T]])
+            .map(_.program.asInstanceOf[RunSurrogateScafiProgram[T, P]])
+          val scafiProgramList: mutable.Buffer[RunSurrogateScafiProgram[T, P]] = ScafiSurrogateIncarnationUtils.allSurrogateScafiProgramsFor(node)
+          scafiProgramList --= alreadyDone
+          if (scafiProgramList.isEmpty) {
+            throw new IllegalStateException(
+              "There is no program requiring a " +
+                classOf[ScafiSurrogateComputationalRoundComplete[_]].getSimpleName + " condition"
+            )
+          }
+          if (scafiProgramList.size > 1) {
+            throw new IllegalStateException(
+              "There are too many programs requiring a " +
+                classOf[ScafiSurrogateComputationalRoundComplete[_]].getName + " condition: " + scafiProgramList
+            )
+          }
+          new ScafiSurrogateComputationalRoundComplete(device, scafiProgramList.head).asInstanceOf[Condition[T]]
+        } else {
+          val alreadyDone = ScafiIncarnationUtils
+            .allConditionsFor(node, classOf[ScafiComputationalRoundComplete[T]])
+            .map(_.asInstanceOf[ScafiComputationalRoundComplete[T]])
+            .map(_.program.asInstanceOf[RunScafiProgram[T, P]])
+          val scafiProgramList: mutable.Buffer[RunScafiProgram[T, P]] = ScafiIncarnationUtils.allScafiProgramsFor(node)
+          scafiProgramList --= alreadyDone
+          if (scafiProgramList.isEmpty) {
+            throw new IllegalStateException(
+              "There is no program requiring a " +
+                classOf[ScafiComputationalRoundComplete[_]].getSimpleName + " condition"
+            )
+          }
+          if (scafiProgramList.size > 1) {
+            throw new IllegalStateException(
+              "There are too many programs requiring a " +
+                classOf[ScafiComputationalRoundComplete[_]].getName + " condition: " + scafiProgramList
+            )
+          }
+          new ScafiComputationalRoundComplete(device, scafiProgramList.head).asInstanceOf[Condition[T]]
+        }
       }
-      if (scafiProgramList.size > 1) {
-        throw new IllegalStateException(
-          "There are too many programs requiring a " +
-            classOf[ScafiComputationalRoundComplete[_]].getName + " condition: " + scafiProgramList
-        )
-      }
-      new ScafiComputationalRoundComplete(device, scafiProgramList.head).asInstanceOf[Condition[T]]
-    }
-  )
+    )
+  }
 
   override def createMolecule(value: String): SimpleMolecule =
     new SimpleMolecule(notNull(value, "simple molecule name"))
@@ -168,7 +193,7 @@ sealed class ScafiIncarnation[T, P <: Position[P]] extends Incarnation[T, P] {
       parameters: Any
   ): Reaction[T] = {
     val parameterString = Option(parameters).map(_.toString).orNull
-    val isSend = "send".equalsIgnoreCase(parameterString)
+    val isSend = "send".equalsIgnoreCase(parameterString) || "sendSurrogate".equalsIgnoreCase(parameterString)
     val result: Reaction[T] =
       if (isSend) {
         new ChemicalReaction[T](
@@ -217,7 +242,7 @@ sealed class ScafiIncarnation[T, P <: Position[P]] extends Incarnation[T, P] {
   }
 }
 
-object ScafiIncarnationUtils {
+object ScafiSurrogateIncarnationUtils {
   def runInScafiDeviceContext[T, A](node: Node[T], message: String, body: ScafiDevice[T] => A): A = {
     if (!isScafiNode(node)) {
       throw new IllegalArgumentException(message)
@@ -247,14 +272,14 @@ object ScafiIncarnationUtils {
       condition <- reaction.getConditions.asScala if conditionClass.isInstance(condition)
     } yield condition
 
-  def inboundDependencies[T](node: Node[T], conditionClass: Class[_]): mutable.Buffer[Dependency] =
-    for {
-      c <- allConditionsFor(node, conditionClass)
-      dep <- c.getInboundDependencies.iterator().asScala
-    } yield dep
-
-  def allCompletedScafiProgram[T](node: Node[T], conditionClass: Class[_]): mutable.Buffer[Dependency] =
-    inboundDependencies(node, classOf[ScafiComputationalRoundComplete[T]])
+//  def inboundDependencies[T](node: Node[T], conditionClass: Class[_]): mutable.Buffer[Dependency] =
+//    for {
+//      c <- allConditionsFor(node, conditionClass)
+//      dep <- c.getInboundDependencies.iterator().asScala
+//    } yield dep
+//
+//  def allCompletedScafiProgram[T](node: Node[T], conditionClass: Class[_]): mutable.Buffer[Dependency] =
+//    inboundDependencies(node, classOf[ScafiComputationalRoundComplete[T]])
 }
 
 object CachedInterpreter {

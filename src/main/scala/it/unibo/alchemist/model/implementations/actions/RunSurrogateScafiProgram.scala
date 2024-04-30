@@ -4,18 +4,14 @@ import it.unibo.alchemist.model._
 import it.unibo.alchemist.model.actions._
 import it.unibo.alchemist.model.implementations.actions.RunScafiProgram.NeighborData
 import it.unibo.alchemist.model.molecules.SimpleMolecule
-import it.unibo.alchemist.model.{Time => AlchemistTime, _}
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist._
 import it.unibo.alchemist.scala.PimpMyAlchemist._
-import it.unibo.scafi.space.Point3D
 import org.apache.commons.math3.random.RandomGenerator
 import org.apache.commons.math3.util.FastMath
 import org.kaikikm.threadresloader.ResourceLoader
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
-import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.{Failure, Try}
 
 sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
@@ -36,6 +32,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
   ) = this(environment, node, reaction, randomGenerator, programName, FastMath.nextUp(1.0 / reaction.getTimeDistribution.getRate))
 
   private var completed = false
+  declareDependencyTo(Dependency.EVERY_MOLECULE)
   private val commonNames = new ScafiIncarnationForAlchemist.StandardSensorNames {}
 
   val program = ResourceLoader
@@ -43,7 +40,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
     .getDeclaredConstructor()
     .newInstance()
     .asInstanceOf[CONTEXT => EXPORT]
-  val programNameMolecule = new SimpleMolecule(programName)
+  val asMolecule = new SimpleMolecule(programName)
   private val surrogateForNodes = collection.mutable.Set[ID]()
   private val contextManager = collection.mutable.Map[ID, CONTEXT]()
   private val neighborhoodManager = collection.mutable.Map[ID, collection.mutable.Map[ID, NeighborData[P]]]()
@@ -65,7 +62,8 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
           val computedResult = program(contextNode)
           val nodePosition = environment.getPosition(environment.getNodeByID(deviceId))
           val toSend = NeighborData(computedResult, nodePosition, alchemistCurrentTime)
-          val neighborsToSend = environment.getNeighborhood(environment.getNodeByID(deviceId))
+          val neighborsToSend = environment
+            .getNeighborhood(environment.getNodeByID(deviceId))
             .asScala
             .map(n => n.getId -> toSend)
             .to(collection.mutable.Map)
@@ -74,6 +72,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
         case None => ()
       }
     })
+    node.setConcentration(asMolecule, neighborhoodManager.values.asInstanceOf[T])
     completed = true
   }
 
@@ -95,7 +94,6 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
       neighbors <- neighborhoodManager.get(nodeId)
       computedResult <- neighbors.get(nodeId)
     } yield computedResult
-
 
   def setComputedResultFor(nodeId: ID, data: NeighborData[P]): Unit = {
     neighborhoodManager.foreachEntry((_, neighbors) => {

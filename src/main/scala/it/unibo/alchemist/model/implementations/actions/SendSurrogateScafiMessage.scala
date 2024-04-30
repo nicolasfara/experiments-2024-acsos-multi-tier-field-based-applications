@@ -5,7 +5,6 @@ import it.unibo.alchemist.model.ScafiIncarnationUtils._
 import it.unibo.alchemist.model.implementations.nodes.ScafiDevice
 import it.unibo.alchemist.model._
 import it.unibo.alchemist.model.actions.AbstractAction
-import it.unibo.alchemist.model.molecules.SimpleMolecule
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist.ID
 import it.unibo.utils.ScalaJavaInterop.EnvironmentOps
 
@@ -64,7 +63,7 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
       reactions <- node.getReactions.asScala
       action <- reactions.getActions.asScala
     } yield action match {
-      case prog: RunScafiProgram[T, P] => if (program.programNameMolecule == prog.programNameMolecule) prog else null
+      case prog: RunScafiProgram[T, P] => if (program.asMolecule == prog.programNameMolecule) prog else null
       case _                           => null
     }
     localPrograms.filter(_ != null).find(action => action.nodeManager.node.getId == nodeId)

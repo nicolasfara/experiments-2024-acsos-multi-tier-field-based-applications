@@ -29,24 +29,20 @@ _reproduceGpsTrace: &ReproduceGPSTrace
 
 _programs:
   - program: &surrogateEmergencyService
-      - time-distribution:
-          type: DiracComb
-          parameters: 1.0
-        type: Event
-        actions:
-          - type: RunSurrogateScafiProgram
-            parameters: [ it.unibo.modularization.EmergencyService ]
-  - program: sendSurrogate
+    - time-distribution: 2
+      type: Event
+      actions:
+        - type: RunSurrogateScafiProgram
+          parameters: [ it.unibo.modularization.EmergencyService ]
+    - program: sendSurrogate
 
   - program: &emergencyService
-    - time-distribution:
-        type: DiracComb
-        parameters: 1.0
+    - time-distribution: 1
       type: Event
       actions:
         - type: RunScafiProgram
           parameters: [it.unibo.modularization.EmergencyService]
-  - program: send
+    - program: send
 
   - program: &moveWithTraces
     - time-distribution: *moveFrequency
@@ -60,7 +56,7 @@ environment:
 
 deployments:
   - type: SpecificPositions # Cloud Instance
-    parameters: [[48.3081743, 16.4736189]]
+    parameters: [ [ 48.3081743, 16.4736189 ] ]
     programs:
       - *surrogateEmergencyService
     contents:
