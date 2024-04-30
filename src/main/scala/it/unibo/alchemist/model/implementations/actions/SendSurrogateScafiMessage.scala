@@ -22,25 +22,7 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
 
   override def getContext: Context = Context.NEIGHBORHOOD
 
-  override def cloneAction(destinationNode: Node[T], reaction: Reaction[T]): Action[T] =
-    runInScafiDeviceContext[T, Action[T]](
-      node = destinationNode,
-      message = getClass.getSimpleName + " cannot get cloned on a node of type " + destinationNode.getClass.getSimpleName,
-      device => {
-        val possibleRef = destinationNode.getReactions
-          .stream()
-          .flatMap(reaction => reaction.getActions.stream())
-          .filter(action => action.isInstanceOf[RunSurrogateScafiProgram[_, _]])
-          .map(action => action.asInstanceOf[RunSurrogateScafiProgram[T, P]])
-          .collect(Collectors.toList[RunSurrogateScafiProgram[T, P]])
-        if (possibleRef.size() == 1) {
-          return new SendSurrogateScafiMessage(environment, device, reaction, possibleRef.get(0))
-        }
-        throw new IllegalStateException(
-          "There must be one and one only unconfigured " + RunScafiProgram.getClass.getSimpleName
-        )
-      }
-    )
+  override def cloneAction(destinationNode: Node[T], reaction: Reaction[T]): Action[T] = ???
 
   override def execute(): Unit = {
     /*

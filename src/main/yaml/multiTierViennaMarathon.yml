@@ -14,6 +14,9 @@ variables:
   nodeCount: &nodeCount
     type: ArbitraryVariable
     parameters: [100, [100, 500, 1000]]
+  allocation: &allocation
+    formula: Map("it.unibo.modularization.EmergencyService" -> "EdgeServer")
+    language: scala
 
 seeds:
   scenario: *seed
@@ -84,6 +87,9 @@ deployments:
     programs:
       - *emergencyService
       - *moveWithTraces
+    properties:
+      - type: AllocatorProperty
+        parameters: [ *allocation ]
     contents:
       - molecule: WearableDevice
         concentration: true
