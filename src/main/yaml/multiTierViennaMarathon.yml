@@ -15,7 +15,9 @@ variables:
     type: ArbitraryVariable
     parameters: [100, [100, 500, 1000]]
   allocation: &allocation
-    formula: Map("it.unibo.modularization.EmergencyService" -> "EdgeServer")
+    formula: |
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      Map("it.unibo.modularization.EmergencyService" -> new SurrogateNode("EdgeServer"))
     language: scala
 
 _constants:

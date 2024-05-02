@@ -75,6 +75,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
     })
     val resultsForEachComputedNode = neighborhoodManager.view.mapValues(_.view.mapValues(_.exportData.root[T]()).toMap).toMap
     node.setConcentration(asMolecule, resultsForEachComputedNode.asInstanceOf[T])
+    node.setConcentration(new SimpleMolecule("SurrogateFor"), surrogateForNodes.toSet.asInstanceOf[T])
     completed = true
   }
 

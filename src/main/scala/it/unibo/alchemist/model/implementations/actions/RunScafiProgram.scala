@@ -71,7 +71,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     val res = for {
       allocator <- allocatorProperty
       targetHostKind <- allocator.getAllocation.get(asMolecule.getName)
-    } yield !node.contains(new SimpleMolecule(targetHostKind))
+    } yield targetHostKind == LocalNode
     res match {
       case Some(condition) => condition
       case _               => false
@@ -96,7 +96,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     }
     val deltaTime: Long =
       currentTime - neighborhoodManager.get(node.getId).map(d => alchemistTimeToNanos(d.executionTime)).getOrElse(0L)
-    val localSensors = node.getContents().asScala.map { case (k, v) => k.getName -> v }
+    val localSensors = node.getContents.asScala.map { case (k, v) => k.getName -> v }
 
     val neighborhoodSensors = scala.collection.mutable.Map[CNAME, Map[ID, Any]]()
     val exports: Iterable[(ID, EXPORT)] = neighborhoodManager.view.mapValues(_.exportData)
@@ -108,14 +108,14 @@ sealed class RunScafiProgram[T, P <: Position[P]](
       allocator <- allocatorProperty
       _ = allocator.manageAllocationToSurrogates()
       targetHostKind <- allocator.getAllocation.get(asMolecule.getName)
-      if !node.contains(new SimpleMolecule(targetHostKind))
+      if targetHostKind != LocalNode
       surrogateNodeId <- allocator.getPhysicalAllocation.get(asMolecule.getName) // Where is physical executed this program? (Node ID)
       surrogateNode = environment.getNodeByID(surrogateNodeId)
       surrogateProgram <- ScafiSurrogateIncarnationUtils
         .allSurrogateScafiProgramsFor[T, P](surrogateNode)
         .find(_.asMolecule == asMolecule)
     } {
-      println(s"Node ${node.getId} has forward to $targetHostKind")
+//      println(s"Node ${node.getId} has forward to $targetHostKind")
       surrogateProgram.setContextFor(node.getId, context)
       completed = true
       return
