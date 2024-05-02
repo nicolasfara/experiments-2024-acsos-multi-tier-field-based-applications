@@ -12,4 +12,6 @@ abstract class MyAggregateProgram
     with FieldUtils {
 
   def senseOr[T](name: String, otherwise: T): T = if (node.has(name)) sense[T](name) else otherwise
+
+  def writeEnv[T](name: String, value: T): Unit = node.put(name, value)
 }
