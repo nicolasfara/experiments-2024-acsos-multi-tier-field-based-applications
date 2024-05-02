@@ -13,6 +13,7 @@ class AllocatorProperty[T, P <: Position[P]](
   private val currentPhysicalAllocation = collection.mutable.Map[String, Int]()
 
   def getAllocation: Map[String, String] = currentAllocation.toMap
+  def getPhysicalAllocation: Map[String, Int] = currentPhysicalAllocation.toMap
   def moveComponentTo(component: String, targetHost: String): Unit = currentAllocation(component) = targetHost
   def manageAllocationToSurrogates(): Unit = {
     val neighborhood = environment.getNeighborhood(node).asScala.toList
