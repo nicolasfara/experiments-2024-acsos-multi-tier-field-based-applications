@@ -18,6 +18,9 @@ variables:
     formula: Map("it.unibo.modularization.EmergencyService" -> "EdgeServer")
     language: scala
 
+_constants:
+  retentionTime: &retentionTime 15.0
+
 seeds:
   scenario: *seed
   simulation: *seed
@@ -36,7 +39,7 @@ _programs:
       type: Event
       actions:
         - type: RunSurrogateScafiProgram
-          parameters: [ it.unibo.modularization.EmergencyService ]
+          parameters: [ it.unibo.modularization.EmergencyService, *retentionTime ]
     - program: sendSurrogate
 
   - program: &emergencyService
@@ -44,7 +47,7 @@ _programs:
       type: Event
       actions:
         - type: RunScafiProgram
-          parameters: [it.unibo.modularization.EmergencyService]
+          parameters: [ it.unibo.modularization.EmergencyService, *retentionTime ]
     - program: send
 
   - program: &moveWithTraces
