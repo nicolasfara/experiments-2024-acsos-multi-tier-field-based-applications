@@ -8,7 +8,6 @@ import it.unibo.alchemist.model.actions.AbstractAction
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist.ID
 import it.unibo.utils.ScalaJavaInterop.EnvironmentOps
 
-import java.util.stream.Collectors
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class SendSurrogateScafiMessage[T, P <: Position[P]](
@@ -34,7 +33,10 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
       for {
         toSend <- program.getComputedResultFor(nodeId)
         localProgram <- getLocalProgramForNode(nodeId)
-      } yield localProgram.sendExport(nodeId, toSend)
+      } yield {
+        localProgram.sendExport(nodeId, toSend)
+        localProgram.setResultWhenOffloaded(toSend.exportData.root())
+      }
     })
     program.prepareForComputationalCycle()
   }

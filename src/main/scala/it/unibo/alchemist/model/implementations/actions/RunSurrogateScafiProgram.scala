@@ -43,6 +43,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
   val asMolecule = new SimpleMolecule(programName)
   private val surrogateForNodes = collection.mutable.Set[ID]()
   private val contextManager = collection.mutable.Map[ID, CONTEXT]()
+  // Map of node ID to a map of neighbor ID to NeighborData
   private val neighborhoodManager = collection.mutable.Map[ID, collection.mutable.Map[ID, NeighborData[P]]]()
 
   override def cloneAction(node: Node[T], reaction: Reaction[T]): Action[T] =
@@ -72,7 +73,8 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
         case None => ()
       }
     })
-    node.setConcentration(asMolecule, neighborhoodManager.values.asInstanceOf[T])
+    val resultsForEachComputedNode = neighborhoodManager.view.mapValues(_.view.mapValues(_.exportData.root[T]()).toMap).toMap
+    node.setConcentration(asMolecule, resultsForEachComputedNode.asInstanceOf[T])
     completed = true
   }
 

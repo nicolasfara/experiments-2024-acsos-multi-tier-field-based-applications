@@ -15,6 +15,7 @@ import it.unibo.alchemist.model.implementations.nodes.ScafiDevice
 import it.unibo.alchemist.model._
 import it.unibo.alchemist.model.actions.AbstractAction
 import it.unibo.alchemist.model.implementations.actions.RunScafiProgram.NeighborData
+import it.unibo.alchemist.model.molecules.SimpleMolecule
 
 import java.util.stream.Collectors
 import scala.jdk.CollectionConverters._
@@ -62,15 +63,22 @@ class SendScafiMessage[T, P <: Position[P]](
   override def execute(): Unit = {
     program.getExport(device.getNode.getId) match {
       case Some(toSend) => send(toSend)
-      case _ => println(s"No data available to send for ${device.getNode.getId}")
+      case _            => println(s"No data available to send for ${device.getNode.getId}")
     }
     program.prepareForComputationalCycle
   }
 
   private def send(toSend: NeighborData[P]): Unit = {
     for {
-      neighborhood <- environment.getNeighborhood(device.getNode).getNeighbors.iterator().asScala
-      action <- ScafiIncarnationUtils.allScafiProgramsFor[T, P](neighborhood).filter(program.getClass.isInstance(_))
+      neighborhood <- environment
+        .getNeighborhood(device.getNode)
+        .getNeighbors
+        .iterator()
+        .asScala
+        .filter(_.contains(new SimpleMolecule("WearableDevice")))
+      action <- ScafiIncarnationUtils
+        .allScafiProgramsFor[T, P](neighborhood)
+        .filter(program.getClass.isInstance(_))
       if action.programNameMolecule == program.programNameMolecule
     } action.sendExport(device.getNode.getId, toSend)
   }

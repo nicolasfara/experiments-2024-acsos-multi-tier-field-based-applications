@@ -40,16 +40,9 @@ sealed class RunScafiProgram[T, P <: Position[P]](
       reaction: Reaction[T],
       randomGenerator: RandomGenerator,
       programName: String
-  ) = {
-    this(
-      environment,
-      node,
-      reaction,
-      randomGenerator,
-      programName,
-      FastMath.nextUp(1.0 / reaction.getTimeDistribution.getRate)
-    )
-  }
+  ) = this(environment, node, reaction, randomGenerator, programName, FastMath.nextUp(1.0 / reaction.getTimeDistribution.getRate))
+
+  declareDependencyTo(Dependency.EVERY_MOLECULE)
 
   import RunScafiProgram.NeighborData
   val program =
@@ -59,8 +52,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
   private var neighborhoodManager: Map[ID, NeighborData[P]] = Map()
   private val commonNames = new ScafiIncarnationForAlchemist.StandardSensorNames {}
   private var completed = false
-  declareDependencyTo(Dependency.EVERY_MOLECULE)
-  lazy val allocator: Option[AllocatorProperty[T, P]] = node.getProperties.asScala
+  lazy val allocatorProperty: Option[AllocatorProperty[T, P]] = node.getProperties.asScala
     .find(_.isInstanceOf[AllocatorProperty[T, P]])
     .map(_.asInstanceOf[AllocatorProperty[T, P]])
 
@@ -69,35 +61,32 @@ sealed class RunScafiProgram[T, P <: Position[P]](
   override def cloneAction(node: Node[T], reaction: Reaction[T]) =
     new RunScafiProgram(environment, node, reaction, randomGenerator, programName, retentionTime)
 
+  implicit def euclideanToPoint(point: P): Point3D = point.getDimensions match {
+    case 1 => Point3D(point.getCoordinate(0), 0, 0)
+    case 2 => Point3D(point.getCoordinate(0), point.getCoordinate(1), 0)
+    case 3 => Point3D(point.getCoordinate(0), point.getCoordinate(1), point.getCoordinate(2))
+  }
+
+  private def isOffloadedToSurrogate: Boolean = {
+    val res = for {
+      allocator <- allocatorProperty
+      targetHostKind <- allocator.getAllocation.get(asMolecule.getName)
+    } yield !node.contains(new SimpleMolecule(targetHostKind))
+    res match {
+      case Some(condition) => condition
+      case _               => false
+    }
+  }
+
   override def execute(): Unit = {
-    allocator match {
-      case Some(alloc) =>
-        alloc.manageAllocationToSurrogates()
-        alloc.getAllocation.get(asMolecule.getName) match {
-          case Some(targetHost) if !node.contains(new SimpleMolecule(targetHost)) => // I need to skip if I'm not the designated target
-            println(s"Node ${node.getId} has forward to $targetHost")
-            completed = true
-            return
-          case _                                                                 => ()
-        }
-      case _ => ()
-    }
     import scala.jdk.CollectionConverters._
-    implicit def euclideanToPoint(point: P): Point3D = point.getDimensions match {
-      case 1 => Point3D(point.getCoordinate(0), 0, 0)
-      case 2 => Point3D(point.getCoordinate(0), point.getCoordinate(1), 0)
-      case 3 => Point3D(point.getCoordinate(0), point.getCoordinate(1), point.getCoordinate(2))
-    }
     val position: P = environment.getPosition(node)
     // NB: We assume it.unibo.alchemist.model.Time = DoubleTime
     //     and that its "time unit" is seconds, and then we get NANOSECONDS
     val alchemistCurrentTime = Try(environment.getSimulation)
       .map(_.getTime)
-      .orElse(
-        Failure(new IllegalStateException("The simulation is uninitialized (did you serialize the environment?)"))
-      )
+      .orElse(Failure(new IllegalStateException("The simulation is uninitialized (did you serialize the environment?)")))
       .get
-    def alchemistTimeToNanos(time: AlchemistTime): Long = (time.toDouble * 1_000_000_000).toLong
     val currentTime: Long = alchemistTimeToNanos(alchemistCurrentTime)
     if (!neighborhoodManager.contains(node.getId)) {
       neighborhoodManager += node.getId -> NeighborData(factory.emptyExport(), position, Double.NaN)
@@ -111,71 +100,105 @@ sealed class RunScafiProgram[T, P <: Position[P]](
 
     val neighborhoodSensors = scala.collection.mutable.Map[CNAME, Map[ID, Any]]()
     val exports: Iterable[(ID, EXPORT)] = neighborhoodManager.view.mapValues(_.exportData)
-    val context = new ContextImpl(node.getId, exports, localSensors, Map.empty) {
-      override def nbrSense[T](nsns: CNAME)(nbr: ID): Option[T] =
-        neighborhoodSensors
-          .getOrElseUpdate(
-            nsns,
-            nsns match {
-              case commonNames.NBR_LAG =>
-                neighborhoodManager.mapValuesStrict[FiniteDuration](nbr =>
-                  FiniteDuration(alchemistTimeToNanos(alchemistCurrentTime - nbr.executionTime), TimeUnit.NANOSECONDS)
-                )
-              /*
-               * nbrDelay is estimated: it should be nbr(deltaTime), here we suppose the round frequency
-               * is negligibly different between devices.
-               */
-              case commonNames.NBR_DELAY =>
-                neighborhoodManager.mapValuesStrict[FiniteDuration](nbr =>
-                  FiniteDuration(
-                    alchemistTimeToNanos(nbr.executionTime) + deltaTime - currentTime,
-                    TimeUnit.NANOSECONDS
-                  )
-                )
-              case commonNames.NBR_RANGE => neighborhoodManager.mapValuesStrict[Double](_.position.distanceTo(position))
-              case commonNames.NBR_VECTOR =>
-                neighborhoodManager.mapValuesStrict[Point3D](_.position.minus(position.getCoordinates))
-              case NBR_ALCHEMIST_LAG =>
-                neighborhoodManager.mapValuesStrict[Double](alchemistCurrentTime - _.executionTime)
-              case NBR_ALCHEMIST_DELAY =>
-                neighborhoodManager.mapValuesStrict(nbr => alchemistTimeToNanos(nbr.executionTime) + deltaTime - currentTime)
-            }
-          )
-          .get(nbr)
-          .map(_.asInstanceOf[T])
 
-      override def sense[T](lsns: String): Option[T] = (lsns match {
-        case LSNS_ALCHEMIST_COORDINATES  => Some(position.getCoordinates)
-        case commonNames.LSNS_DELTA_TIME => Some(FiniteDuration(deltaTime, TimeUnit.NANOSECONDS))
-        case commonNames.LSNS_POSITION =>
-          val k = position.getDimensions()
-          Some(
-            Point3D(
-              position.getCoordinate(0),
-              if (k >= 2) position.getCoordinate(1) else 0,
-              if (k >= 3) position.getCoordinate(2) else 0
-            )
-          )
-        case commonNames.LSNS_TIMESTAMP  => Some(currentTime)
-        case commonNames.LSNS_TIME       => Some(java.time.Instant.ofEpochMilli((alchemistCurrentTime * 1000).toLong))
-        case LSNS_ALCHEMIST_NODE_MANAGER => Some(nodeManager)
-        case LSNS_ALCHEMIST_DELTA_TIME =>
-          Some(
-            alchemistCurrentTime.minus(
-              neighborhoodManager.get(node.getId).map(_.executionTime).getOrElse(AlchemistTime.INFINITY)
-            )
-          )
-        case LSNS_ALCHEMIST_ENVIRONMENT => Some(environment)
-        case LSNS_ALCHEMIST_RANDOM      => Some(randomGenerator)
-        case LSNS_ALCHEMIST_TIMESTAMP   => Some(alchemistCurrentTime)
-        case _                          => localSensors.get(lsns)
-      }).map(_.asInstanceOf[T])
+    val context = buildContext(exports, localSensors.toMap, neighborhoodSensors, alchemistCurrentTime, deltaTime, currentTime, position)
+
+    // Check if the program is offloaded to a surrogate
+    for {
+      allocator <- allocatorProperty
+      _ = allocator.manageAllocationToSurrogates()
+      targetHostKind <- allocator.getAllocation.get(asMolecule.getName)
+      if !node.contains(new SimpleMolecule(targetHostKind))
+      surrogateNodeId <- allocator.getPhysicalAllocation.get(asMolecule.getName) // Where is physical executed this program? (Node ID)
+      surrogateNode = environment.getNodeByID(surrogateNodeId)
+      surrogateProgram <- ScafiSurrogateIncarnationUtils
+        .allSurrogateScafiProgramsFor[T, P](surrogateNode)
+        .find(_.asMolecule == asMolecule)
+    } {
+      println(s"Node ${node.getId} has forward to $targetHostKind")
+      surrogateProgram.setContextFor(node.getId, context)
+      completed = true
+      return
     }
+    // End check ---------------------------------------------------
+
+    // Execute normal program since is executed locally
     val computed = program(context)
     node.setConcentration(programName, computed.root[T]())
     val toSend = NeighborData(computed, position, alchemistCurrentTime)
     neighborhoodManager = neighborhoodManager + (node.getId -> toSend)
     completed = true
+  }
+
+  private def alchemistTimeToNanos(time: AlchemistTime): Long = (time.toDouble * 1_000_000_000).toLong
+
+  private def buildContext(
+      exports: Iterable[(ID, EXPORT)],
+      localSensors: Map[String, T],
+      neighborhoodSensors: scala.collection.mutable.Map[CNAME, Map[ID, Any]],
+      alchemistCurrentTime: AlchemistTime,
+      deltaTime: Long,
+      currentTime: Long,
+      position: P
+  ): CONTEXT = new ContextImpl(node.getId, exports, localSensors, Map.empty) {
+    override def nbrSense[T](nsns: CNAME)(nbr: ID): Option[T] =
+      neighborhoodSensors
+        .getOrElseUpdate(
+          nsns,
+          nsns match {
+            case commonNames.NBR_LAG =>
+              neighborhoodManager.mapValuesStrict[FiniteDuration](nbr =>
+                FiniteDuration(alchemistTimeToNanos(alchemistCurrentTime - nbr.executionTime), TimeUnit.NANOSECONDS)
+              )
+            /*
+             * nbrDelay is estimated: it should be nbr(deltaTime), here we suppose the round frequency
+             * is negligibly different between devices.
+             */
+            case commonNames.NBR_DELAY =>
+              neighborhoodManager.mapValuesStrict[FiniteDuration](nbr =>
+                FiniteDuration(
+                  alchemistTimeToNanos(nbr.executionTime) + deltaTime - currentTime,
+                  TimeUnit.NANOSECONDS
+                )
+              )
+            case commonNames.NBR_RANGE => neighborhoodManager.mapValuesStrict[Double](_.position.distanceTo(position))
+            case commonNames.NBR_VECTOR =>
+              neighborhoodManager.mapValuesStrict[Point3D](_.position.minus(position.getCoordinates))
+            case NBR_ALCHEMIST_LAG =>
+              neighborhoodManager.mapValuesStrict[Double](alchemistCurrentTime - _.executionTime)
+            case NBR_ALCHEMIST_DELAY =>
+              neighborhoodManager.mapValuesStrict(nbr => alchemistTimeToNanos(nbr.executionTime) + deltaTime - currentTime)
+          }
+        )
+        .get(nbr)
+        .map(_.asInstanceOf[T])
+
+    override def sense[T](lsns: String): Option[T] = (lsns match {
+      case LSNS_ALCHEMIST_COORDINATES  => Some(position.getCoordinates)
+      case commonNames.LSNS_DELTA_TIME => Some(FiniteDuration(deltaTime, TimeUnit.NANOSECONDS))
+      case commonNames.LSNS_POSITION =>
+        val k = position.getDimensions()
+        Some(
+          Point3D(
+            position.getCoordinate(0),
+            if (k >= 2) position.getCoordinate(1) else 0,
+            if (k >= 3) position.getCoordinate(2) else 0
+          )
+        )
+      case commonNames.LSNS_TIMESTAMP  => Some(currentTime)
+      case commonNames.LSNS_TIME       => Some(java.time.Instant.ofEpochMilli((alchemistCurrentTime * 1000).toLong))
+      case LSNS_ALCHEMIST_NODE_MANAGER => Some(nodeManager)
+      case LSNS_ALCHEMIST_DELTA_TIME =>
+        Some(
+          alchemistCurrentTime.minus(
+            neighborhoodManager.get(node.getId).map(_.executionTime).getOrElse(AlchemistTime.INFINITY)
+          )
+        )
+      case LSNS_ALCHEMIST_ENVIRONMENT => Some(environment)
+      case LSNS_ALCHEMIST_RANDOM      => Some(randomGenerator)
+      case LSNS_ALCHEMIST_TIMESTAMP   => Some(alchemistCurrentTime)
+      case _                          => localSensors.get(lsns)
+    }).map(_.asInstanceOf[T])
   }
 
   def sendExport(id: ID, exportData: NeighborData[P]): Unit = neighborhoodManager += id -> exportData
@@ -184,7 +207,9 @@ sealed class RunScafiProgram[T, P <: Position[P]](
 
   def isComputationalCycleComplete: Boolean = completed
 
-  def prepareForComputationalCycle: Unit = completed = false
+  def prepareForComputationalCycle(): Unit = completed = false
+
+  def setResultWhenOffloaded(result: T): Unit = node.setConcentration(asMolecule, result)
 
 }
 
