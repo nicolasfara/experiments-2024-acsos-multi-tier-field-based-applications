@@ -11,7 +11,7 @@ import org.apache.commons.math3.random.RandomGenerator
 import org.apache.commons.math3.util.FastMath
 import org.kaikikm.threadresloader.ResourceLoader
 
-import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.{IterableHasAsScala, IteratorHasAsScala}
 import scala.util.{Failure, Try}
 
 sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
@@ -56,6 +56,15 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
       .get
     // Clean the neighborhood manager according to the retention time
     neighborhoodManager.foreach { case (_, data) => data.filterInPlace((_, p) => p.executionTime >= alchemistCurrentTime - retentionTime) }
+    //Clean the surrogateForNodes according to the retention time
+    val applicativeDevice = environment.getNeighborhood(node)
+      .getNeighbors
+      .iterator()
+      .asScala
+      .filter(_.contains(new SimpleMolecule("WearableDevice")))
+      .map(_.getId)
+      .toList
+    surrogateForNodes.filterInPlace(nodeId => applicativeDevice.contains(nodeId))
     // Run the program for each node offloading the computation to the surrogate (this)
     surrogateForNodes.foreach(deviceId => {
       contextManager.get(deviceId) match {
