@@ -14,6 +14,10 @@ variables:
   nodeCount: &nodeCount
     type: ArbitraryVariable
     parameters: [100, [100, 500, 1000]]
+  programDag: &programDag
+    language: scala
+    formula: |
+      Map("it.unibo.modularization.EmergencyService" -> List("it.unibo.modularization.OtherComponent"))
   allocation: &allocation
     formula: |
       import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
@@ -41,7 +45,15 @@ _programs:
       type: Event
       actions:
         - type: RunSurrogateScafiProgram
-          parameters: [ it.unibo.modularization.EmergencyService, *retentionTime ]
+          parameters: [ it.unibo.modularization.EmergencyService, *retentionTime, *programDag ]
+    - program: sendSurrogate
+
+  - program: &surrogateOtherComponent
+    - time-distribution: 2
+      type: Event
+      actions:
+        - type: RunSurrogateScafiProgram
+          parameters: [ it.unibo.modularization.OtherComponent, *retentionTime, *programDag ]
     - program: sendSurrogate
 
   - program: &emergencyService
@@ -49,7 +61,15 @@ _programs:
       type: Event
       actions:
         - type: RunScafiProgram
-          parameters: [ it.unibo.modularization.EmergencyService, *retentionTime ]
+          parameters: [ it.unibo.modularization.EmergencyService, *retentionTime, *programDag ]
+    - program: send
+
+  - program: &otherComponent
+    - time-distribution: 1
+      type: Event
+      actions:
+        - type: RunScafiProgram
+          parameters: [ it.unibo.modularization.OtherComponent, *retentionTime, *programDag ]
     - program: send
 
   - program: &moveWithTraces
@@ -67,6 +87,7 @@ deployments:
     parameters: [[ 48.3081743, 16.4736189 ]]
     programs:
       - *surrogateEmergencyService
+      - *surrogateOtherComponent
     contents:
       - molecule: CloudInstance
         concentration: true
@@ -83,6 +104,7 @@ deployments:
     ]
     programs:
       - *surrogateEmergencyService
+      - *surrogateOtherComponent
     contents:
       - molecule: EdgeServer
         concentration: true
@@ -92,6 +114,7 @@ deployments:
     programs:
       - *emergencyService
       - *moveWithTraces
+      - *otherComponent
     properties:
       - type: AllocatorProperty
         parameters: [ *allocation ]

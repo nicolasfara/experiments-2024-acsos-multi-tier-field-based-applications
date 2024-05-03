@@ -16,6 +16,7 @@ import it.unibo.alchemist.model._
 import it.unibo.alchemist.model.actions.AbstractAction
 import it.unibo.alchemist.model.implementations.actions.RunScafiProgram.NeighborData
 import it.unibo.alchemist.model.molecules.SimpleMolecule
+import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist.Path
 
 import java.util.stream.Collectors
 import scala.jdk.CollectionConverters._
@@ -62,20 +63,58 @@ class SendScafiMessage[T, P <: Position[P]](
   /** Effectively executes this action. */
   override def execute(): Unit = {
     program.getExport(device.getNode.getId) match {
-      case Some(toSend) => send(toSend)
-      case _            => println(s"No data available to send for ${device.getNode.getId}")
+      case Some(toSend) =>
+        send(toSend)
+        // I need to send the field output to the input program of this one following the programDag
+        for {
+          programsToFeed <- program.programDag.get(program.asMolecule.getName)
+          (pat, valueOption) = program.generateComponentOutputField()
+          value <- valueOption
+        } {
+          programsToFeed.foreach(programName => sendToInputComponent(pat -> value, programName))
+          getLocalComponentsOf(programsToFeed).foreach(_.feedInputFromNode(device.getNode.getId, pat -> value))
+        }
+//
+//          program.programDag.get(program.asMolecule.getName) match {
+//            case Some(programsToFeed) =>
+//              val generatedOutputField = program.generateComponentOutputField()
+//              programsToFeed.foreach(programName => sendToInputComponent(generatedOutputField, programName))
+//              getLocalComponentsOf(programsToFeed).foreach(_.feedInputFromNode(device.getNode.getId, generatedOutputField))
+//            case None => // println(s"${program.asMolecule.getName} executed in ${device.getNode.getId} has no wired output")
+//          }
+      case _ => println(s"No data available to send for ${device.getNode.getId}")
     }
-    program.prepareForComputationalCycle
+
+    program.prepareForComputationalCycle()
+  }
+
+  private def getLocalComponentsOf(component: List[String]): List[RunScafiProgram[T, P]] =
+    ScafiIncarnationUtils
+      .allScafiProgramsFor[T, P](getNode)
+      .filter(p => component.contains(p.asMolecule.getName))
+      .toList
+
+  private def getNeighborhoodForNode(node: Node[T]): List[Node[T]] =
+    environment
+      .getNeighborhood(device.getNode)
+      .getNeighbors
+      .iterator()
+      .asScala
+      .filter(_.contains(new SimpleMolecule("WearableDevice")))
+      .toList
+
+  private def sendToInputComponent(value: (Path, T), componentName: String): Unit = {
+    for {
+      neighborhood <- getNeighborhoodForNode(device.getNode)
+      component <- ScafiIncarnationUtils
+        .allScafiProgramsFor[T, P](neighborhood)
+      if component.asMolecule == new SimpleMolecule(componentName)
+    } component.feedInputFromNode(device.getNode.getId, value)
   }
 
   private def send(toSend: NeighborData[P]): Unit = {
     for {
-      neighborhood <- environment
-        .getNeighborhood(device.getNode)
-        .getNeighbors
-        .iterator()
-        .asScala
-        .filter(_.contains(new SimpleMolecule("WearableDevice")))
+      neighborhood <- getNeighborhoodForNode(device.getNode)
       action <- ScafiIncarnationUtils
         .allScafiProgramsFor[T, P](neighborhood)
         .filter(program.getClass.isInstance(_))

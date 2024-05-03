@@ -20,7 +20,8 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
     reaction: Reaction[T],
     randomGenerator: RandomGenerator,
     programName: String,
-    retentionTime: Double
+    retentionTime: Double,
+    programDagMapping: Map[String, List[String]] = Map.empty,
 ) extends AbstractLocalAction[T](node) {
 
   def this(
@@ -40,6 +41,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
     .getDeclaredConstructor()
     .newInstance()
     .asInstanceOf[CONTEXT => EXPORT]
+  val programDag = programDagMapping
   val asMolecule = new SimpleMolecule(programName)
   private val surrogateForNodes = collection.mutable.Set[ID]()
   private val contextManager = collection.mutable.Map[ID, CONTEXT]()

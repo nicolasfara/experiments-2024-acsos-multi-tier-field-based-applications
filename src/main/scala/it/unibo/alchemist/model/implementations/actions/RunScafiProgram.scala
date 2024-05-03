@@ -21,6 +21,7 @@ import org.apache.commons.math3.util.FastMath
 import org.kaikikm.threadresloader.ResourceLoader
 
 import java.util.concurrent.TimeUnit
+import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Try}
@@ -31,7 +32,8 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     reaction: Reaction[T],
     randomGenerator: RandomGenerator,
     programName: String,
-    retentionTime: Double
+    retentionTime: Double,
+    programDagMapping: Map[String, List[String]] = Map.empty
 ) extends AbstractLocalAction[T](node) {
 
   def this(
@@ -47,6 +49,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
   import RunScafiProgram.NeighborData
   val program =
     ResourceLoader.classForName(programName).getDeclaredConstructor().newInstance().asInstanceOf[CONTEXT => EXPORT]
+  val programDag = programDagMapping
   val programNameMolecule = new SimpleMolecule(programName)
   lazy val nodeManager = new SimpleNodeManager(node)
   private var neighborhoodManager: Map[ID, NeighborData[P]] = Map()
@@ -55,6 +58,8 @@ sealed class RunScafiProgram[T, P <: Position[P]](
   lazy val allocatorProperty: Option[AllocatorProperty[T, P]] = node.getProperties.asScala
     .find(_.isInstanceOf[AllocatorProperty[T, P]])
     .map(_.asInstanceOf[AllocatorProperty[T, P]])
+
+  private val inputFromComponents = collection.mutable.Map[ID, mutable.Buffer[(Path, T)]]()
 
   def asMolecule = programNameMolecule
 
@@ -94,12 +99,25 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     neighborhoodManager = neighborhoodManager.filter { case (id, data) =>
       id == node.getId || data.executionTime >= alchemistCurrentTime - retentionTime
     }
+    // Delete the input from components that are not in the neighborhood
+    neighborhoodManager.keys.foreach(nodeId => {
+      if (!inputFromComponents.contains(nodeId)) {
+        inputFromComponents -= nodeId
+      }
+    })
     val deltaTime: Long =
       currentTime - neighborhoodManager.get(node.getId).map(d => alchemistTimeToNanos(d.executionTime)).getOrElse(0L)
     val localSensors = node.getContents.asScala.map { case (k, v) => k.getName -> v }
 
     val neighborhoodSensors = scala.collection.mutable.Map[CNAME, Map[ID, Any]]()
     val exports: Iterable[(ID, EXPORT)] = neighborhoodManager.view.mapValues(_.exportData)
+//    val exports = _exports.map { case (id, exp) =>
+//      inputFromComponents.get(id) match {
+//        case Some(inputs) => inputs.foreach(input => exp.put(input._1, input._2))
+//        case None         =>
+//      }
+//      id -> exp
+//    }
 
     val context = buildContext(exports, localSensors.toMap, neighborhoodSensors, alchemistCurrentTime, deltaTime, currentTime, position)
 
@@ -201,7 +219,9 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     }).map(_.asInstanceOf[T])
   }
 
-  def sendExport(id: ID, exportData: NeighborData[P]): Unit = neighborhoodManager += id -> exportData
+  def sendExport(id: ID, exportData: NeighborData[P]): Unit = {
+    neighborhoodManager += id -> exportData
+  }
 
   def getExport(id: ID): Option[NeighborData[P]] = neighborhoodManager.get(id)
 
@@ -211,6 +231,20 @@ sealed class RunScafiProgram[T, P <: Position[P]](
 
   def setResultWhenOffloaded(result: T): Unit = node.setConcentration(asMolecule, result)
 
+  def feedInputFromNode(node: ID, value: (Path, T)): Unit = {
+    inputFromComponents.get(node) match {
+      case Some(inputs) =>
+        val newInputs = inputs.filter(!_._1.matches(value._1))
+        inputFromComponents += node -> (newInputs += value)
+      case None         => inputFromComponents += node -> mutable.Buffer(value)
+    }
+  }
+
+  def generateComponentOutputField(): (Path, Option[T]) = {
+    val path = factory.path(Scope(programName))
+    val result = neighborhoodManager(node.getId).exportData.get[T](factory.emptyPath())
+    path -> result
+  }
 }
 
 object RunScafiProgram {

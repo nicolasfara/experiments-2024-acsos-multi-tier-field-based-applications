@@ -11,7 +11,7 @@ case object LocalNode extends Target
 
 class AllocatorProperty[T, P <: Position[P]](
     private val environment: Environment[T, _],
-    private val node: Node[T],
+    node: Node[T],
     private val startAllocation: Map[String, Target]
 ) extends NodeProperty[T] {
   private val currentAllocation = collection.mutable.Map(startAllocation.toSeq: _*)
@@ -35,7 +35,7 @@ class AllocatorProperty[T, P <: Position[P]](
 
     val neighborhood = environment.getNeighborhood(node).asScala.toList
     val previousAllocation = currentAllocation(component)
-//    println(s"Node ${node.getId} is moving $component from $previousAllocation to LocalNode")
+    println(s"Node ${node.getId} is moving $component from $previousAllocation to LocalNode")
 
     previousAllocation match {
       case LocalNode => // Already allocated to the local node
@@ -46,7 +46,7 @@ class AllocatorProperty[T, P <: Position[P]](
           .filter(_._2.isDefined)
           .map(node => node._1 -> node._2.get)
           .toMap
-        require(candidates.size == 1, s"Expected exactly one host for component $component, found ${candidates.size}")
+        require(candidates.size == 1, s"Expected exactly one host for component $component, found ${candidates.size} in node ${node.getId}")
         val (_, oldSurrogateProgram) = candidates.head
 
         oldSurrogateProgram.removeSurrogateFor(node.getId)
@@ -64,7 +64,7 @@ class AllocatorProperty[T, P <: Position[P]](
       .filter(_._2.isDefined)
       .map { case (node, program) => node -> program.get }
       .toMap
-    require(candidates.size == 1, s"Expected exactly one host for component $component, found ${candidates.size}")
+    require(candidates.size == 1, s"Expected exactly one host for component $component, found ${candidates.size} in node ${node.getId}")
     val (hostToOffload, program) = candidates.head
     // Remove from previous surrogate
     val oldSurrogate = getSurrogateComponentForNode(hostToOffload, component)
