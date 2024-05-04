@@ -23,7 +23,7 @@ import org.kaikikm.threadresloader.ResourceLoader
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
 import scala.util.{Failure, Try}
 
 sealed class RunScafiProgram[T, P <: Position[P]](
@@ -47,15 +47,19 @@ sealed class RunScafiProgram[T, P <: Position[P]](
   declareDependencyTo(Dependency.EVERY_MOLECULE)
 
   import RunScafiProgram.NeighborData
-  val program =
-    ResourceLoader.classForName(programName).getDeclaredConstructor().newInstance().asInstanceOf[CONTEXT => EXPORT]
-  val programDag = programDagMapping
+  val program = ResourceLoader
+    .classForName(programName)
+    .getDeclaredConstructor()
+    .newInstance()
+    .asInstanceOf[CONTEXT => EXPORT]
+  val programDag: Map[String, List[String]] = programDagMapping
   val programNameMolecule = new SimpleMolecule(programName)
   lazy val nodeManager = new SimpleNodeManager(node)
   private var neighborhoodManager: Map[ID, NeighborData[P]] = Map()
   private val commonNames = new ScafiIncarnationForAlchemist.StandardSensorNames {}
+  private val targetMolecule = new SimpleMolecule("Target")
   private var completed = false
-  lazy val allocatorProperty: Option[AllocatorProperty[T, P]] = node.getProperties.asScala
+  private lazy val allocatorProperty: Option[AllocatorProperty[T, P]] = node.getProperties.asScala
     .find(_.isInstanceOf[AllocatorProperty[T, P]])
     .map(_.asInstanceOf[AllocatorProperty[T, P]])
 
@@ -73,14 +77,11 @@ sealed class RunScafiProgram[T, P <: Position[P]](
   }
 
   private def isOffloadedToSurrogate: Boolean = {
-    val res = for {
+    val result = for {
       allocator <- allocatorProperty
-      targetHostKind <- allocator.getAllocation.get(asMolecule.getName)
-    } yield targetHostKind == LocalNode
-    res match {
-      case Some(condition) => condition
-      case _               => false
-    }
+      targetHostKind <- allocator.getPhysicalComponentsAllocations.get(asMolecule.getName)
+    } yield targetHostKind != node
+    result.getOrElse(false)
   }
 
   override def execute(): Unit = {
@@ -93,59 +94,59 @@ sealed class RunScafiProgram[T, P <: Position[P]](
       .orElse(Failure(new IllegalStateException("The simulation is uninitialized (did you serialize the environment?)")))
       .get
     val currentTime: Long = alchemistTimeToNanos(alchemistCurrentTime)
-    if (!neighborhoodManager.contains(node.getId)) {
-      neighborhoodManager += node.getId -> NeighborData(factory.emptyExport(), position, Double.NaN)
+    manageRetentionMessages(alchemistCurrentTime)
+
+    // ----- Create context
+    // Add self node to the neighborhood manager
+    neighborhoodManager = neighborhoodManager.updatedWith(node.getId) {
+      case value @ Some(_) => value
+      case None            => Some(NeighborData(factory.emptyExport(), position, Double.NaN))
     }
-    neighborhoodManager = neighborhoodManager.filter { case (id, data) =>
-      id == node.getId || data.executionTime >= alchemistCurrentTime - retentionTime
-    }
-    // Delete the input from components that are not in the neighborhood
-    neighborhoodManager.keys.foreach(nodeId => {
-      if (!inputFromComponents.contains(nodeId)) {
-        inputFromComponents -= nodeId
-      }
-    })
     val deltaTime: Long =
       currentTime - neighborhoodManager.get(node.getId).map(d => alchemistTimeToNanos(d.executionTime)).getOrElse(0L)
     val localSensors = node.getContents.asScala.map { case (k, v) => k.getName -> v }
-
     val neighborhoodSensors = scala.collection.mutable.Map[CNAME, Map[ID, Any]]()
     val exports: Iterable[(ID, EXPORT)] = neighborhoodManager.view.mapValues(_.exportData)
-//    val exports = _exports.map { case (id, exp) =>
-//      inputFromComponents.get(id) match {
-//        case Some(inputs) => inputs.foreach(input => exp.put(input._1, input._2))
-//        case None         =>
-//      }
-//      id -> exp
-//    }
-
     val context = buildContext(exports, localSensors.toMap, neighborhoodSensors, alchemistCurrentTime, deltaTime, currentTime, position)
 
-    // Check if the program is offloaded to a surrogate
-    for {
-      allocator <- allocatorProperty
-      _ = allocator.manageAllocationToSurrogates()
-      targetHostKind <- allocator.getAllocation.get(asMolecule.getName)
-      if targetHostKind != LocalNode
-      surrogateNodeId <- allocator.getPhysicalAllocation.get(asMolecule.getName) // Where is physical executed this program? (Node ID)
-      surrogateNode = environment.getNodeByID(surrogateNodeId)
-      surrogateProgram <- ScafiSurrogateIncarnationUtils
-        .allSurrogateScafiProgramsFor[T, P](surrogateNode)
-        .find(_.asMolecule == asMolecule)
-    } {
-//      println(s"Node ${node.getId} has forward to $targetHostKind")
-      surrogateProgram.setContextFor(node.getId, context)
-      completed = true
-      return
+    // ----- Check if the program is offloaded to a surrogate or not
+    if (isOffloadedToSurrogate) {
+      // Check if the program is offloaded to a surrogate
+      for {
+        allocator <- allocatorProperty
+        targetHostKind <- allocator.getComponentsAllocation.get(asMolecule.getName)
+        if targetHostKind != LocalNode
+        surrogateNode <- allocator.getPhysicalComponentsAllocations.get(asMolecule.getName) // Where is physical executed this program? (Node ID)
+        surrogateProgram <- ScafiSurrogateIncarnationUtils
+          .allSurrogateScafiProgramsFor[T, P](surrogateNode)
+          .find(_.asMolecule == asMolecule)
+      } {
+//        println(s"Node ${node.getId} has forward to $targetHostKind with id ${surrogateNode.getId}")
+        surrogateProgram.setContextFor(node.getId, context)
+        surrogateProgram.setCurrentNeighborhoodOf(node.getId, currentApplicativeNeighborhood)
+      }
+    } else {
+      // Execute normal program since is executed locally
+      val computed = program(context)
+      val toSend = NeighborData(computed, position, alchemistCurrentTime)
+      neighborhoodManager = neighborhoodManager + (node.getId -> toSend)
     }
-    // End check ---------------------------------------------------
-
-    // Execute normal program since is executed locally
-    val computed = program(context)
-    node.setConcentration(programName, computed.root[T]())
-    val toSend = NeighborData(computed, position, alchemistCurrentTime)
-    neighborhoodManager = neighborhoodManager + (node.getId -> toSend)
+    for {
+      programResult <- neighborhoodManager.get(node.getId)
+      result <- programResult.exportData.get[T](factory.emptyPath())
+    } node.setConcentration(programNameMolecule, result)
     completed = true
+  }
+
+  private def currentApplicativeNeighborhood: Set[ID] = {
+    environment
+      .getNeighborhood(node)
+      .getNeighbors
+      .iterator()
+      .asScala
+      .filter(_.getConcentration(targetMolecule) == LocalNode.asInstanceOf[T])
+      .map(_.getId)
+      .toSet
   }
 
   private def alchemistTimeToNanos(time: AlchemistTime): Long = (time.toDouble * 1_000_000_000).toLong
@@ -236,7 +237,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
       case Some(inputs) =>
         val newInputs = inputs.filter(!_._1.matches(value._1))
         inputFromComponents += node -> (newInputs += value)
-      case None         => inputFromComponents += node -> mutable.Buffer(value)
+      case None => inputFromComponents += node -> mutable.Buffer(value)
     }
   }
 
@@ -244,6 +245,12 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     val path = factory.path(Scope(programName))
     val result = neighborhoodManager(node.getId).exportData.get[T](factory.emptyPath())
     path -> result
+  }
+
+  private def manageRetentionMessages(currentTime: AlchemistTime): Unit = {
+    neighborhoodManager = neighborhoodManager.filter { case (id, data) =>
+      id == node.getId || data.executionTime >= currentTime - retentionTime
+    }
   }
 }
 

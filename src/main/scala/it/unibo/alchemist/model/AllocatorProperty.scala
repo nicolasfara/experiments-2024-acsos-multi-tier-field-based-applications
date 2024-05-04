@@ -1,6 +1,6 @@
 package it.unibo.alchemist.model
 
-import it.unibo.alchemist.model.implementations.actions.RunSurrogateScafiProgram
+import it.unibo.alchemist.model.implementations.actions.{RunScafiProgram, RunSurrogateScafiProgram}
 import it.unibo.alchemist.model.molecules.SimpleMolecule
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -10,84 +10,124 @@ final case class SurrogateNode(kind: String) extends Target
 case object LocalNode extends Target
 
 class AllocatorProperty[T, P <: Position[P]](
-    private val environment: Environment[T, _],
+    environment: Environment[T, _],
     node: Node[T],
-    private val startAllocation: Map[String, Target]
+    startAllocation: Map[String, Target]
 ) extends NodeProperty[T] {
-  private val currentAllocation = collection.mutable.Map(startAllocation.toSeq: _*)
-  private val currentPhysicalAllocation = collection.mutable.Map[String, Int]()
+  private val previousAllocation = collection.mutable.Map(startAllocation.toSeq: _*)
+  private val componentsAllocation = collection.mutable.Map(startAllocation.toSeq: _*)
+  private val physicalComponentsAllocations = collection.mutable.Map[String, Int]()
 
-  def getAllocation: Map[String, Target] = currentAllocation.toMap
-  def getPhysicalAllocation: Map[String, Int] = currentPhysicalAllocation.toMap
-  def moveComponentTo(component: String, toTarget: Target): Unit = {
-    toTarget match {
-      case LocalNode           => manageLocalAllocation(component)
-      case SurrogateNode(kind) => manageSurrogateAllocation(component, SurrogateNode(kind))
-    }
-    currentAllocation(component) = toTarget
+  private val targetMolecule = new SimpleMolecule("Target")
+
+  def getComponentsAllocation: Map[String, Target] = componentsAllocation.toMap
+  def getPhysicalComponentsAllocations: Map[String, Node[T]] = physicalComponentsAllocations
+    .map(v => v._1 -> environment.getNodeByID(v._2))
+    .toMap
+
+  def setComponentAllocation(component: String, target: Target): Unit = {
+    componentsAllocation(component) = target
   }
 
-  private def manageLocalAllocation(component: String): Unit = {
-//    if (currentAllocation(component) == LocalNode) { // Already allocated to the local node
-//      currentPhysicalAllocation.put(component, node.getId)
-//      return
-//    }
-
-    val neighborhood = environment.getNeighborhood(node).asScala.toList
-    val previousAllocation = currentAllocation(component)
-    println(s"Node ${node.getId} is moving $component from $previousAllocation to LocalNode")
-
-    previousAllocation match {
-      case LocalNode => // Already allocated to the local node
-      case SurrogateNode(_) =>
-        val candidates = neighborhood
-          .filter(_.contains(new SimpleMolecule(previousAllocation.asInstanceOf[SurrogateNode].kind))) // Mimic the capability
-          .map(node => node -> getSurrogateComponentForNode(node, component))
-          .filter(_._2.isDefined)
-          .map(node => node._1 -> node._2.get)
-          .toMap
-        require(candidates.size == 1, s"Expected exactly one host for component $component, found ${candidates.size} in node ${node.getId}")
-        val (_, oldSurrogateProgram) = candidates.head
-
-        oldSurrogateProgram.removeSurrogateFor(node.getId)
-    }
-    currentPhysicalAllocation.put(component, node.getId)
-  }
-
-  private def manageSurrogateAllocation(component: String, toHost: SurrogateNode): Unit = {
-//    if (currentAllocation(component) == toHost) return // Already allocated to the same host
-
-    val neighborhood = environment.getNeighborhood(node).asScala.toList
-    val candidates = neighborhood
-      .filter(_.contains(new SimpleMolecule(toHost.kind))) // Mimic the capability
-      .map(node => node -> getSurrogateComponentForNode(node, component))
-      .filter(_._2.isDefined)
-      .map { case (node, program) => node -> program.get }
-      .toMap
-    require(candidates.size == 1, s"Expected exactly one host for component $component, found ${candidates.size} in node ${node.getId}")
-    val (hostToOffload, program) = candidates.head
-    // Remove from previous surrogate
-    val oldSurrogate = getSurrogateComponentForNode(hostToOffload, component)
-      .getOrElse(throw new IllegalStateException(s"Component $component is not offloaded to any node"))
-    oldSurrogate.removeSurrogateFor(node.getId)
-    // Set the new surrogate
-    program.setSurrogateFor(node.getId)
-    currentPhysicalAllocation.put(component, hostToOffload.getId)
-  }
-
-  private def getSurrogateComponentForNode(node: Node[T], program: String): Option[RunSurrogateScafiProgram[T, P]] =
-    ScafiSurrogateIncarnationUtils
-      .allSurrogateScafiProgramsFor(node)
-      .find(_.asMolecule == new SimpleMolecule(program))
-
-  def manageAllocationToSurrogates(): Unit = {
-    currentAllocation.foreach { case (component, targetHost) =>
-      targetHost match {
-        case LocalNode           => manageLocalAllocation(component)
-        case SurrogateNode(kind) => manageSurrogateAllocation(component, SurrogateNode(kind))
+  def checkAllocation(): Unit = {
+    val surrogateNeighbors = this.surrogateNeighbors
+    if (previousAllocation == componentsAllocation) {
+      val neighborhoodIds = surrogateNeighbors.map(_.getId) + node.getId
+      // If the neighborhood is the same as the physical allocation, then no changes are needed
+      if (physicalComponentsAllocations.isEmpty) {
+        componentsAllocation.foreach { case (component, target) =>
+          target match {
+            case LocalNode                          => physicalComponentsAllocations.put(component, node.getId)
+            case surrogateTarget @ SurrogateNode(_) => setSurrogateForComponentWithTarget(component, surrogateTarget)
+          }
+        }
+      } else if (physicalComponentsAllocations.values.forall(neighborhoodIds.contains) && physicalComponentsAllocations.nonEmpty) {
+        ()
+      } else {
+        // If the neighborhood is changed, then the components must be moved accordingly
+        // Get changed components
+        val changedIds = physicalComponentsAllocations.values.toSet -- neighborhoodIds
+        val componentsToRelocate = physicalComponentsAllocations.filter { case (_, id) => changedIds.contains(id) }.toMap
+        relocateComponents(componentsToRelocate)
+      }
+    } else {
+      componentsAllocation.foreach { case (component, target) =>
+        if (!previousAllocation.get(component).contains(target)) {
+          val oldId = physicalComponentsAllocations(component)
+          getComponentProgramFromSurrogate(environment.getNodeByID(oldId), component) match {
+            case Some(oldComponent) =>
+              oldComponent.removeSurrogateFor(node.getId)
+              physicalComponentsAllocations.remove(component)
+            case None => throw new IllegalStateException(s"Component $component of node ${node.getId} is not offloaded to any node")
+          }
+          target match {
+            case LocalNode                          => physicalComponentsAllocations.put(component, node.getId) // Move to local
+            case surrogateTarget @ SurrogateNode(_) => setSurrogateForComponentWithTarget(component, surrogateTarget)
+          }
+        }
       }
     }
+    // replace previous allocation with the current one
+    previousAllocation.clear()
+    previousAllocation ++= componentsAllocation
   }
+
+  private def setSurrogateForComponentWithTarget(component: String, target: Target): Unit = {
+    val result = for {
+      newNode <- getNeighborWithTarget(target)
+      newComponent <- getComponentProgramFromSurrogate(newNode, component)
+    } yield {
+      newComponent.setSurrogateFor(node.getId)
+      physicalComponentsAllocations(component) = newNode.getId
+    }
+    if (result.isEmpty) throw new IllegalStateException(s"Cannot move component $component to any node with target $target")
+  }
+
+  private def relocateComponents(componentsToRelocate: Map[String, Int]): Unit = {
+    componentsToRelocate.foreach { case (component, oldId) =>
+      val requiredTargetByComponent = componentsAllocation(component)
+      val result = for {
+        newNode <- getNeighborWithTarget(requiredTargetByComponent)
+        oldComponent <- getComponentProgramFromSurrogate(environment.getNodeByID(oldId), component)
+        newComponent <- getComponentProgramFromSurrogate(newNode, component)
+      } yield {
+        oldComponent.removeSurrogateFor(node.getId)
+        newComponent.setSurrogateFor(node.getId)
+        physicalComponentsAllocations(component) = newNode.getId
+      }
+      if (result.isEmpty) throw new IllegalStateException(s"Cannot move component $component to any node")
+    }
+  }
+
+  private def getComponentProgramFromSurrogate(node: Node[T], component: String): Option[RunSurrogateScafiProgram[T, P]] = {
+    ScafiSurrogateIncarnationUtils
+      .allSurrogateScafiProgramsFor[T, P](node)
+      .find(_.asMolecule.getName == component)
+  }
+
+  private def getComponentProgramFromLocal(node: Node[T], component: String): Option[RunScafiProgram[T, P]] = {
+    ScafiIncarnationUtils
+      .allScafiProgramsFor[T, P](node)
+      .find(_.asMolecule.getName == component)
+  }
+
+  private def getNeighborWithTarget(target: Target): Option[Node[T]] = {
+    environment
+      .getNeighborhood(node)
+      .asScala
+      .toList
+      .filter(_.getConcentration(targetMolecule) == target.asInstanceOf[T])
+      .sortBy(environment.getDistanceBetweenNodes(node, _))
+      .headOption
+  }
+
+  private def surrogateNeighbors: Set[Node[T]] = environment
+    .getNeighborhood(node)
+    .asScala
+    .toList
+    .filter(_.getConcentration(targetMolecule) != LocalNode.asInstanceOf[T])
+    .toSet
+
   override def getNode: Node[T] = node
   override def cloneOnNewNode(node: Node[T]): NodeProperty[T] = ???
 }

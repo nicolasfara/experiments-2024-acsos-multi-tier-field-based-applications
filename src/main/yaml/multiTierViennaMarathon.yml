@@ -6,14 +6,16 @@ variables:
     max: 1
     step: 1
     default: 0
-  range: &range
-    formula: 500.0
+  applicativeRange: &applicativeRange
+    formula: 3000.0
+  edgeRange: &edgeRange
+    formula: 5000.0
   moveFrequency: &moveFrequency
     formula: 1.0 / 2
     language: scala
   nodeCount: &nodeCount
     type: ArbitraryVariable
-    parameters: [100, [100, 500, 1000]]
+    parameters: [4, [100, 500, 1000]]
   programDag: &programDag
     language: scala
     formula: |
@@ -22,7 +24,29 @@ variables:
     formula: |
       import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
       Map("it.unibo.modularization.EmergencyService" -> new SurrogateNode("EdgeServer"))
+#      Map("it.unibo.modularization.EmergencyService" -> LocalNode)
     language: scala
+  cloudTarget: &cloudTarget
+    language: scala
+    formula: |
+      s"""
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      new SurrogateNode("CloudInstance")
+      """
+  edgeTarget: &edgeTarget
+    language: scala
+    formula: |
+      s"""
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      new SurrogateNode("EdgeServer")
+      """
+  localTarget: &localTarget
+    language: scala
+    formula: |
+      s"""
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      LocalNode
+      """
 
 _constants:
   retentionTime: &retentionTime 15.0
@@ -33,15 +57,21 @@ seeds:
 
 network-model:
   type: ThreeTierConnection #*connectionType
-  parameters: [*range]
+  parameters: [*applicativeRange, *edgeRange]
 
 _reproduceGpsTrace: &ReproduceGPSTrace
   type: GPSTraceWalker
   parameters: ["vcmuser.gpx", false, AlignToTime, [1365922800, false, false]]
 
 _programs:
+  - program: &runtime
+      - time-distribution: 1
+        type: Event
+        actions:
+          - type: ModularizationRuntime
+
   - program: &surrogateEmergencyService
-    - time-distribution: 2
+    - time-distribution: 2.05
       type: Event
       actions:
         - type: RunSurrogateScafiProgram
@@ -49,7 +79,7 @@ _programs:
     - program: sendSurrogate
 
   - program: &surrogateOtherComponent
-    - time-distribution: 2
+    - time-distribution: 2.05
       type: Event
       actions:
         - type: RunSurrogateScafiProgram
@@ -87,8 +117,10 @@ deployments:
     parameters: [[ 48.3081743, 16.4736189 ]]
     programs:
       - *surrogateEmergencyService
-      - *surrogateOtherComponent
+#      - *surrogateOtherComponent
     contents:
+      - molecule: Target
+        concentration: *cloudTarget
       - molecule: CloudInstance
         concentration: true
 
@@ -104,21 +136,26 @@ deployments:
     ]
     programs:
       - *surrogateEmergencyService
-      - *surrogateOtherComponent
+#      - *surrogateOtherComponent
     contents:
+      - molecule: Target
+        concentration: *edgeTarget
       - molecule: EdgeServer
         concentration: true
 
   - type: FromGPSTrace
     parameters: [ *nodeCount, "vcmuser.gpx", false, AlignToTime, [ 1365922800, false, false ] ]
     programs:
+      - *runtime
       - *emergencyService
-      - *moveWithTraces
-      - *otherComponent
+#      - *moveWithTraces
+#      - *otherCompwonent
     properties:
       - type: AllocatorProperty
         parameters: [ *allocation ]
     contents:
+      - molecule: Target
+        concentration: *localTarget
       - molecule: WearableDevice
         concentration: true
 

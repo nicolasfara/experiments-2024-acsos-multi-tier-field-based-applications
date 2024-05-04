@@ -2,34 +2,36 @@ package it.unibo.alchemist.model.linkingrules
 
 import it.unibo.alchemist.model.molecules.SimpleMolecule
 import it.unibo.alchemist.model.neighborhoods.Neighborhoods
-import it.unibo.alchemist.model.{Environment, LinkingRule, Neighborhood, Node, Position}
+import it.unibo.alchemist.model.{Environment, LinkingRule, LocalNode, Neighborhood, Node, Position, SurrogateNode, Target}
 
 import scala.jdk.CollectionConverters._
 
-class ThreeTierConnection[T, P <: Position[P]](private val range: Double) extends LinkingRule[T, P] {
+class ThreeTierConnection[T, P <: Position[P]](
+    private val applicativeRange: Double,
+    private val edgeRange: Double
+) extends LinkingRule[T, P] {
+  private val targetMolecule = new SimpleMolecule("Target")
 
   override def computeNeighborhood(center: Node[T], environment: Environment[T, P]): Neighborhood[T] = {
-    val wearableNodes =
-      environment.getNodes.stream().filter(_.contains(new SimpleMolecule("WearableDevice"))).toList.asScala
-    val edgeServersNodes =
-      environment.getNodes.stream().filter(_.contains(new SimpleMolecule("EdgeServer"))).toList.asScala
-    val cloudNodes =
-      environment.getNodes.stream().filter(_.contains(new SimpleMolecule("CloudInstance"))).toList.asScala
-
-    if (center.contains(new SimpleMolecule("WearableDevice"))) {
-      val nearestEdgeServer = edgeServersNodes
-        .map(n => n -> environment.getDistanceBetweenNodes(center, n))
-        .minByOption(_._2) match {
-        case Some((node, _)) => node
-        case None            => throw new IllegalStateException("No edge server found")
-      }
-      val nearest = environment.getNodesWithinRange(center, range).stream().toList.asScala :+ nearestEdgeServer
-      Neighborhoods.make(environment, center, (nearest ++ cloudNodes).asJava)
-    } else if (center.contains(new SimpleMolecule("EdgeServer"))) {
-      Neighborhoods.make(environment, center, (cloudNodes ++ edgeServersNodes).asJava)
+    val nodes = environment.getNodes.stream().iterator().asScala.toSet
+    if (center.getConcentration(targetMolecule) == SurrogateNode("CloudInstance").asInstanceOf[T]) {
+      Neighborhoods.make(environment, center, (nodes - center).asJava)
+    } else if (center.getConcentration(targetMolecule) == SurrogateNode("EdgeServer").asInstanceOf[T]) {
+      val edgeServersNodes = getNodesWithTarget(nodes, SurrogateNode("EdgeServer"))
+      val cloudNodes = getNodesWithTarget(nodes, SurrogateNode("CloudInstance"))
+      Neighborhoods.make(environment, center, (edgeServersNodes ++ cloudNodes - center).asJava)
     } else {
-      Neighborhoods.make(environment, center, (wearableNodes ++ edgeServersNodes ++ cloudNodes).asJava)
+      val nearbyApplicativeNodes = environment.getNodesWithinRange(center, applicativeRange).iterator().asScala.toSet
+      val nearbyEdgeServers = environment.getNodesWithinRange(center, edgeRange).iterator().asScala.toSet
+      val applicativeDevices = getNodesWithTarget(nearbyApplicativeNodes, LocalNode)
+      val edgeServersNodes = getNodesWithTarget(nearbyEdgeServers, SurrogateNode("EdgeServer"))
+      val cloudNodes = getNodesWithTarget(nodes, SurrogateNode("CloudInstance"))
+      Neighborhoods.make(environment, center, (applicativeDevices ++ edgeServersNodes ++ cloudNodes - center).asJava)
     }
+  }
+
+  private def getNodesWithTarget(nodes: Set[Node[T]], target: Target): Set[Node[T]] = {
+    nodes.filter(_.getConcentration(targetMolecule) == target.asInstanceOf[T])
   }
 
   override def isLocallyConsistent: Boolean = true

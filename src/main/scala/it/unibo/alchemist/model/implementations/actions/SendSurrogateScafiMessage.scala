@@ -33,7 +33,7 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
       for {
         toSend <- program.getComputedResultFor(nodeId)
         localProgram <- getLocalProgramForNode(nodeId)
-      } yield {
+      } {
         localProgram.sendExport(nodeId, toSend)
         localProgram.setResultWhenOffloaded(toSend.exportData.root())
       }

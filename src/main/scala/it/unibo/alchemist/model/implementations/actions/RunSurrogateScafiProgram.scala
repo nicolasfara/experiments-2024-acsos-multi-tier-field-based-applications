@@ -21,8 +21,10 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
     randomGenerator: RandomGenerator,
     programName: String,
     retentionTime: Double,
-    programDagMapping: Map[String, List[String]] = Map.empty,
+    programDagMapping: Map[String, List[String]] = Map.empty
 ) extends AbstractLocalAction[T](node) {
+
+  private val targetMolecule = new SimpleMolecule("Target")
 
   def this(
       environment: Environment[T, P],
@@ -34,7 +36,6 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
 
   private var completed = false
   declareDependencyTo(Dependency.EVERY_MOLECULE)
-  private val commonNames = new ScafiIncarnationForAlchemist.StandardSensorNames {}
 
   val program = ResourceLoader
     .classForName(programName)
@@ -47,6 +48,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
   private val contextManager = collection.mutable.Map[ID, CONTEXT]()
   // Map of node ID to a map of neighbor ID to NeighborData
   private val neighborhoodManager = collection.mutable.Map[ID, collection.mutable.Map[ID, NeighborData[P]]]()
+  private val currentNeighborhoodOfNodes = collection.mutable.Map[ID, Set[ID]]()
 
   override def cloneAction(node: Node[T], reaction: Reaction[T]): Action[T] =
     new RunSurrogateScafiProgram[T, P](environment, node, reaction, randomGenerator, programName, retentionTime)
@@ -56,41 +58,50 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
       .map(_.getTime)
       .orElse(Failure(new IllegalStateException("The simulation is uninitialized (did you serialize the environment?)")))
       .get
+
     // Clean the neighborhood manager according to the retention time
-    neighborhoodManager.foreach { case (_, data) => data.filterInPlace((_, p) => p.executionTime >= alchemistCurrentTime - retentionTime) }
-    //Clean the surrogateForNodes according to the retention time
-    val applicativeDevice = environment.getNeighborhood(node)
-      .getNeighbors
-      .iterator()
-      .asScala
-      .filter(_.contains(new SimpleMolecule("WearableDevice")))
-      .map(_.getId)
-      .toList
+    neighborhoodManager.foreach { case (_, data) =>
+      data.filterInPlace((_, p) => p.executionTime >= alchemistCurrentTime - retentionTime)
+    }
+    // Clean the surrogateForNodes according to the retention time
+    val applicativeDevice = activeApplicationNeighborDevices.map(_.getId)
     surrogateForNodes.filterInPlace(nodeId => applicativeDevice.contains(nodeId))
-    // Run the program for each node offloading the computation to the surrogate (this)
+    currentNeighborhoodOfNodes.filterInPlace((nodeId, _) => applicativeDevice.contains(nodeId))
+
+    // Run the program for each node offloading the computation to this surrogate
     surrogateForNodes.foreach(deviceId => {
       contextManager.get(deviceId) match {
         case Some(contextNode) =>
           val computedResult = program(contextNode)
           val nodePosition = environment.getPosition(environment.getNodeByID(deviceId))
           val toSend = NeighborData(computedResult, nodePosition, alchemistCurrentTime)
-          val neighborsToSend = environment
-            .getNeighborhood(environment.getNodeByID(deviceId))
-            .asScala
-            .map(n => n.getId -> toSend)
-            .to(collection.mutable.Map)
-          neighborsToSend.put(deviceId, toSend)
+          val neighborsToSend = currentNeighborhoodOfNodes(deviceId)
+            .map(neighId => neighId -> toSend)
+            .to(collection.mutable.Map) ++ Map(deviceId -> toSend)
           neighborhoodManager.put(deviceId, neighborsToSend)
         case None => ()
       }
     })
     val resultsForEachComputedNode = neighborhoodManager.view.mapValues(_.view.mapValues(_.exportData.root[T]()).toMap).toMap
     node.setConcentration(asMolecule, resultsForEachComputedNode.asInstanceOf[T])
-    node.setConcentration(new SimpleMolecule("SurrogateFor"), surrogateForNodes.toSet.asInstanceOf[T])
+    node.setConcentration(new SimpleMolecule("SurrogateFor"), isSurrogateFor.asInstanceOf[T])
     completed = true
   }
 
+  private def activeApplicationNeighborDevices: List[Node[T]] = {
+    environment
+      .getNeighborhood(node)
+      .getNeighbors
+      .iterator()
+      .asScala
+      .filter(_.getConcentration(targetMolecule) == LocalNode.asInstanceOf[T])
+      .toList
+  }
+
   def setSurrogateFor(nodeId: ID): Unit = surrogateForNodes.add(nodeId)
+
+  def setCurrentNeighborhoodOf(nodeId: ID, neighborhood: Set[ID]): Unit =
+    currentNeighborhoodOfNodes.put(nodeId, neighborhood)
 
   def removeSurrogateFor(nodeId: ID): Unit = {
     surrogateForNodes.remove(nodeId)
