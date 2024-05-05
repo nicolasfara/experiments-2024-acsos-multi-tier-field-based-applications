@@ -65,7 +65,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
 
   private val inputFromComponents = collection.mutable.Map[ID, mutable.Buffer[(Path, T)]]()
 
-  def asMolecule = programNameMolecule
+  def asMolecule: SimpleMolecule = programNameMolecule
 
   override def cloneAction(node: Node[T], reaction: Reaction[T]) =
     new RunScafiProgram(environment, node, reaction, randomGenerator, programName, retentionTime)
@@ -108,6 +108,8 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     val neighborhoodSensors = scala.collection.mutable.Map[CNAME, Map[ID, Any]]()
     val exports: Iterable[(ID, EXPORT)] = neighborhoodManager.view.mapValues(_.exportData)
     val context = buildContext(exports, localSensors.toMap, neighborhoodSensors, alchemistCurrentTime, deltaTime, currentTime, position)
+
+    mergeInputFromComponentsWithExport()
 
     // ----- Check if the program is offloaded to a surrogate or not
     if (isOffloadedToSurrogate) {
@@ -160,7 +162,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
       currentTime: Long,
       position: P
   ): CONTEXT = new ContextImpl(node.getId, exports, localSensors, Map.empty) {
-    override def nbrSense[T](nsns: CNAME)(nbr: ID): Option[T] =
+    override def nbrSense[TT](nsns: CNAME)(nbr: ID): Option[TT] =
       neighborhoodSensors
         .getOrElseUpdate(
           nsns,
@@ -190,13 +192,13 @@ sealed class RunScafiProgram[T, P <: Position[P]](
           }
         )
         .get(nbr)
-        .map(_.asInstanceOf[T])
+        .map(_.asInstanceOf[TT])
 
-    override def sense[T](lsns: String): Option[T] = (lsns match {
+    override def sense[TT](lsns: String): Option[TT] = (lsns match {
       case LSNS_ALCHEMIST_COORDINATES  => Some(position.getCoordinates)
       case commonNames.LSNS_DELTA_TIME => Some(FiniteDuration(deltaTime, TimeUnit.NANOSECONDS))
       case commonNames.LSNS_POSITION =>
-        val k = position.getDimensions()
+        val k = position.getDimensions
         Some(
           Point3D(
             position.getCoordinate(0),
@@ -217,7 +219,7 @@ sealed class RunScafiProgram[T, P <: Position[P]](
       case LSNS_ALCHEMIST_RANDOM      => Some(randomGenerator)
       case LSNS_ALCHEMIST_TIMESTAMP   => Some(alchemistCurrentTime)
       case _                          => localSensors.get(lsns)
-    }).map(_.asInstanceOf[T])
+    }).map(_.asInstanceOf[TT])
   }
 
   def sendExport(id: ID, exportData: NeighborData[P]): Unit = {
@@ -245,6 +247,14 @@ sealed class RunScafiProgram[T, P <: Position[P]](
     val path = factory.path(Scope(programName))
     val result = neighborhoodManager(node.getId).exportData.get[T](factory.emptyPath())
     path -> result
+  }
+
+  private def mergeInputFromComponentsWithExport(): Unit = {
+    for {
+      (nodeId, inputs) <- inputFromComponents
+      export <- neighborhoodManager.get(nodeId).map(_.exportData)
+      (path, value) <- inputs
+    } export.put(path, value)
   }
 
   private def manageRetentionMessages(currentTime: AlchemistTime): Unit = {

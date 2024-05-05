@@ -23,8 +23,10 @@ variables:
   allocation: &allocation
     formula: |
       import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
-      Map("it.unibo.modularization.EmergencyService" -> new SurrogateNode("EdgeServer"))
-#      Map("it.unibo.modularization.EmergencyService" -> LocalNode)
+      Map(
+        "it.unibo.modularization.EmergencyService" -> new SurrogateNode("EdgeServer"),
+        "it.unibo.modularization.OtherComponent" -> new SurrogateNode("EdgeServer"),
+      )
     language: scala
   cloudTarget: &cloudTarget
     language: scala
@@ -49,7 +51,7 @@ variables:
       """
 
 _constants:
-  retentionTime: &retentionTime 15.0
+  retentionTime: &retentionTime 25.0
 
 seeds:
   scenario: *seed
@@ -117,7 +119,7 @@ deployments:
     parameters: [[ 48.3081743, 16.4736189 ]]
     programs:
       - *surrogateEmergencyService
-#      - *surrogateOtherComponent
+      - *surrogateOtherComponent
     contents:
       - molecule: Target
         concentration: *cloudTarget
@@ -136,7 +138,7 @@ deployments:
     ]
     programs:
       - *surrogateEmergencyService
-#      - *surrogateOtherComponent
+      - *surrogateOtherComponent
     contents:
       - molecule: Target
         concentration: *edgeTarget
@@ -148,8 +150,8 @@ deployments:
     programs:
       - *runtime
       - *emergencyService
+      - *otherComponent
 #      - *moveWithTraces
-#      - *otherCompwonent
     properties:
       - type: AllocatorProperty
         parameters: [ *allocation ]

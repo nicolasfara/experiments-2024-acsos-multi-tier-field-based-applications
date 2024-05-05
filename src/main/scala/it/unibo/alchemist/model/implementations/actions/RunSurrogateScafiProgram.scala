@@ -120,14 +120,6 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
       computedResult <- neighbors.get(nodeId)
     } yield computedResult
 
-  def setComputedResultFor(nodeId: ID, data: NeighborData[P]): Unit = {
-    neighborhoodManager.foreachEntry((_, neighbors) => {
-      if (neighbors.contains(nodeId)) {
-        neighbors.put(nodeId, data)
-      }
-    })
-  }
-
   def isComputationalCycleComplete: Boolean = completed
 
   def prepareForComputationalCycle(): Unit = completed = false

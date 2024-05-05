@@ -48,7 +48,26 @@ class SendScafiMessage[T, P <: Position[P]](
     // Send to physical neighbors
     val applicativeNeighbors = getNeighborsWithTarget(LocalNode)
     applicativeNeighbors.foreach(sendToNode)
+
+    // Get programs to input the computed value
+    for {
+      componentsToInput <- program.programDag.get(program.programNameMolecule.getName)
+      component <- componentsToInput
+      neighbor <- applicativeNeighbors :+ getNode // Add self node since is another program instance not having the input field
+    } sendToInputOfComponent(neighbor, component)
     program.prepareForComputationalCycle()
+  }
+
+  private def sendToInputOfComponent(node: Node[T], component: String): Unit = {
+    val inputProgram = ScafiIncarnationUtils
+      .allScafiProgramsFor[T, P](node)
+      .find(_.asMolecule.getName == component)
+      .getOrElse(throw new IllegalStateException(s"Program $component not found on node ${node.getId}"))
+    val (path, optionalValue) = program.generateComponentOutputField()
+    optionalValue match {
+      case Some(value) => inputProgram.feedInputFromNode(device.getNode().getId, path -> value)
+      case _ => println(s"No data available to feed input of $component on node ${node.getId} from ${device.getNode.getId}")
+    }
   }
 
   private def sendToNode(node: Node[T]): Unit = {
@@ -71,60 +90,6 @@ class SendScafiMessage[T, P <: Position[P]](
       .filter(_.getConcentration(targetMolecule) == target.asInstanceOf[T])
       .toList
   }
-
-  /** Effectively executes this action. */
-//  override def execute(): Unit = {
-//    program.getExport(device.getNode.getId) match {
-//      case Some(toSend) =>
-//        send(toSend)
-//        // I need to send the field output to the input program of this one following the programDag
-//        for {
-//          programsToFeed <- program.programDag.get(program.asMolecule.getName)
-//          (pat, valueOption) = program.generateComponentOutputField()
-//          value <- valueOption
-//        } {
-//          programsToFeed.foreach(programName => sendToInputComponent(pat -> value, programName))
-//          getLocalComponentsOf(programsToFeed).foreach(_.feedInputFromNode(device.getNode.getId, pat -> value))
-//        }
-//      case _ => println(s"No data available to send for ${device.getNode.getId}")
-//    }
-//    getNode.setConcentration(new SimpleMolecule("lastSentMessage"), environment.getSimulation.getTime.asInstanceOf[T])
-//    program.prepareForComputationalCycle()
-//  }
-//
-//  private def getLocalComponentsOf(component: List[String]): List[RunScafiProgram[T, P]] =
-//    ScafiIncarnationUtils
-//      .allScafiProgramsFor[T, P](getNode)
-//      .filter(p => component.contains(p.asMolecule.getName))
-//      .toList
-//
-//  private def getNeighborhoodForNode(node: Node[T]): List[Node[T]] =
-//    environment
-//      .getNeighborhood(device.getNode)
-//      .getNeighbors
-//      .iterator()
-//      .asScala
-//      .filter(_.contains(new SimpleMolecule("WearableDevice")))
-//      .toList
-//
-//  private def sendToInputComponent(value: (Path, T), componentName: String): Unit = {
-//    for {
-//      neighborhood <- getNeighborhoodForNode(device.getNode)
-//      component <- ScafiIncarnationUtils
-//        .allScafiProgramsFor[T, P](neighborhood)
-//      if component.asMolecule == new SimpleMolecule(componentName)
-//    } component.feedInputFromNode(device.getNode.getId, value)
-//  }
-//
-//  private def send(toSend: NeighborData[P]): Unit = {
-//    for {
-//      neighborhood <- getNeighborhoodForNode(device.getNode)
-//      action <- ScafiIncarnationUtils
-//        .allScafiProgramsFor[T, P](neighborhood)
-//        .filter(program.getClass.isInstance(_))
-//      if action.programNameMolecule == program.programNameMolecule
-//    } action.sendExport(device.getNode.getId, toSend)
-//  }
 
   /** @return The context for this action. */
   override def getContext: Context = Context.NEIGHBORHOOD
