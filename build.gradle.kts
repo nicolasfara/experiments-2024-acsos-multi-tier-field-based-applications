@@ -111,7 +111,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
                 """
                     launcher: {
                         parameters: {
-                            batch: [ seed, spacing, error ],
+                            batch: [ scenario, nodeCount, surrogateFrequency, seed ],
                             showProgress: true,
                             autoStart: true,
                             parallelism: $threadCount,
