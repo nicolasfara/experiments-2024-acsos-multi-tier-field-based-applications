@@ -80,7 +80,7 @@ class AllocatorProperty[T, P <: Position[P]](
       newComponent.setSurrogateFor(node.getId)
       physicalComponentsAllocations(component) = newNode.getId
     }
-    if (result.isEmpty) throw new IllegalStateException(s"Cannot move component $component to any node with target $target")
+    if (result.isEmpty) throw new IllegalStateException(s"Cannot move component $component to any node with target $target for node ${node.getId}")
   }
 
   private def relocateComponents(componentsToRelocate: Map[String, Int]): Unit = {

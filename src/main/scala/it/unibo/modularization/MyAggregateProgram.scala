@@ -6,9 +6,7 @@ abstract class MyAggregateProgram
     extends AggregateProgram
     with StandardSensors
     with ScafiAlchemistSupport
-    with BlockG
-    with BlockC
-    with Gradients
+    with BuildingBlocks
     with FieldUtils {
 
   def senseOr[T](name: String, otherwise: T): T = if (node.has(name)) sense[T](name) else otherwise

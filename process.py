@@ -184,17 +184,17 @@ if __name__ == '__main__':
     # How to name the summary of the processed data
     pickleOutput = 'data_summary'
     # Experiment prefixes: one per experiment (root of the file name)
-    experiments = ['simulation']
+    experiments = ['multiTier', 'monolithic']
     floatPrecision = '{: 0.3f}'
     # Number of time samples 
     timeSamples = 100
     # time management
     minTime = 0
-    maxTime = 50
+    maxTime = 1800
     timeColumnName = 'time'
     logarithmicTime = False
     # One or more variables are considered random and "flattened"
-    seedVars = ['seed', 'longseed']
+    seedVars = ['seed']
     # Label mapping
     class Measure:
         def __init__(self, description, unit = None):
@@ -425,3 +425,18 @@ if __name__ == '__main__':
         generate_all_charts(current_experiment_means, current_experiment_errors, basedir = f'{experiment}/all')
         
 # Custom charting
+
+    import seaborn as sns
+
+    sns.set_style("whitegrid")
+    sns.set_palette("colorblind")
+
+    multitier_dataset = means['multiTier']
+    monolithic_dataset = means['monolithic']
+
+    a = multitier_dataset.sel({'nodeCount': 50}).to_dataframe().drop(columns=['nodeCount']).rename(columns={"isRegionLeader[sum]": "leader[multi-tier]"}).reset_index()
+    b = monolithic_dataset.sel({'nodeCount': 50}).to_dataframe().drop(columns=['nodeCount']).rename(columns={"isRegionLeader[sum]": "leader[monolithic]"}).reset_index()
+
+    results = a.merge(b, how='inner', on='time').melt(id_vars='time', var_name='leader', value_name='value')
+    sns.lineplot(data=results, x='time', y='value', hue='leader')
+    plt.show()
