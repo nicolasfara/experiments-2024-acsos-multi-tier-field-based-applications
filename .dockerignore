@@ -5,7 +5,7 @@
 .spyproject/
 build/
 charts/
-data/
+data_bak/
 release.config.js
 renovate.json
 package-lock.json
