@@ -187,7 +187,7 @@ if __name__ == '__main__':
     experiments = ['multiTier', 'monolithic']
     floatPrecision = '{: 0.3f}'
     # Number of time samples 
-    timeSamples = 100
+    timeSamples = 1800 * 10
     # time management
     minTime = 0
     maxTime = 1800
@@ -427,16 +427,31 @@ if __name__ == '__main__':
 # Custom charting
 
     import seaborn as sns
+    import pandas as pd
 
-    sns.set_style("whitegrid")
-    sns.set_palette("colorblind")
+    mono = (means["multiTier"].sel(
+        {'scenario': 'monolithic\n', 'nodeCount': 50.0, 'surrogateFrequency': 10.0}
+    )["potential[sum]"].to_dataframe().drop(columns=['scenario', 'nodeCount', 'surrogateFrequency'])
+            .rename(columns={"potential[sum]": "potential[monolithic]"})).reset_index()
+    multi = (means["multiTier"].sel(
+        {'scenario': 'offloaded\n', 'nodeCount': 50.0, 'surrogateFrequency': 10.0}
+    )["potential[sum]"].to_dataframe().drop(columns=['scenario', 'nodeCount', 'surrogateFrequency'])
+             .rename(columns={"potential[sum]": "potential[offloaded]"})).reset_index()
+    result = mono.merge(multi, how='inner', on='time')
+    result["error"] = result.apply(lambda x: x["potential[offloaded]"] - x["potential[monolithic]"], axis=1)
+    errors = result[["time", "error"]].copy()
+    print(errors)
 
-    multitier_dataset = means['multiTier']
-    monolithic_dataset = means['monolithic']
+    result = result.drop(columns=['error'])
+    result = result.melt(id_vars='time', var_name='potential', value_name='value')
+    print(result)
 
-    a = multitier_dataset.sel({'nodeCount': 50}).to_dataframe().drop(columns=['nodeCount']).rename(columns={"isRegionLeader[sum]": "leader[multi-tier]"}).reset_index()
-    b = monolithic_dataset.sel({'nodeCount': 50}).to_dataframe().drop(columns=['nodeCount']).rename(columns={"isRegionLeader[sum]": "leader[monolithic]"}).reset_index()
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
 
-    results = a.merge(b, how='inner', on='time').melt(id_vars='time', var_name='leader', value_name='value')
-    sns.lineplot(data=results, x='time', y='value', hue='leader')
+    sns.lineplot(data=result, x='time', y='value', hue='potential', ax=ax1)
+    sns.lineplot(data=errors, x='time', y='error', ax=ax2, color='red')
+    ax1.set_ylim(110500, 120000)
+    ax2.set_ylim(-350, 350)
+
     plt.show()

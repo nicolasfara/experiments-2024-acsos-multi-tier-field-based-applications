@@ -4,7 +4,6 @@ import it.unibo.alchemist.model._
 import it.unibo.alchemist.model.actions._
 import it.unibo.alchemist.model.implementations.actions.RunScafiProgram.NeighborData
 import it.unibo.alchemist.model.molecules.SimpleMolecule
-import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist._
 import it.unibo.alchemist.scala.PimpMyAlchemist._
 import org.apache.commons.math3.random.RandomGenerator
@@ -79,6 +78,7 @@ sealed class RunSurrogateScafiProgram[T, P <: Position[P]](
             .map(neighId => neighId -> toSend)
             .to(collection.mutable.Map) ++ Map(deviceId -> toSend)
           neighborhoodManager.put(deviceId, neighborsToSend)
+          environment.getNodeByID(deviceId).setConcentration(asMolecule, computedResult.root[T]())
         case None => ()
       }
     })

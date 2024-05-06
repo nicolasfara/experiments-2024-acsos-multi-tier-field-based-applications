@@ -7,7 +7,7 @@ variables:
     step: 1
     default: 0
   applicativeRange: &applicativeRange
-    formula: 3000.0
+    formula: 2000.0
   edgeRange: &edgeRange
     formula: 7000.0
   moveFrequency: &moveFrequency
@@ -37,13 +37,13 @@ variables:
   # real variables
   nodeCount: &nodeCount
     type: ArbitraryVariable
-    parameters: [50, [50, 100, 200]]
+    parameters: [50, [50, 100]]
   surrogateFrequency: &surrogateFrequency
     type: ArbitraryVariable
-    parameters: [10, [1, 10, 50]]
+    parameters: [10, [1, 10, 15]]
   scenario:
     type: ArbitraryVariable
-    parameters: [multitier, [monolithic, multitier, offloaded]]
+    parameters: [offloaded, [monolithic, multitier, offloaded]]
   programDag: &programDag
     language: scala
     formula: |
@@ -158,6 +158,7 @@ deployments:
     programs:
       - *surrogateEmergencyService
       - *surrogateOtherComponent
+#      - *emergencyService
     contents:
       - molecule: Target
         concentration: *edgeTarget
@@ -184,11 +185,11 @@ export:
   - type: CSVExporter
     parameters:
       fileNameRoot: "multiTier"
-      interval: 1.0
+      interval: 1
       exportPath: "data"
     data:
       - time
-      - molecule: isRegionLeader
+      - molecule: potential
         aggregators: [sum]
         value-filter: onlyfinite
 

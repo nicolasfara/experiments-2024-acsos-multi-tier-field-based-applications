@@ -6,8 +6,8 @@ class OtherComponent extends MyAggregateProgram {
 
   override def main(): Any = {
     val input = inputFromComponent("it.unibo.modularization.EmergencyService", Double.PositiveInfinity)
-    val nodeInRegion = C[Double, Set[ID]](input, _ ++ _, Set(mid()), Set[ID]())
+//    val nodeInRegion = C[Double, Set[ID]](input, _ ++ _, Set(mid()), Set[ID]())
     writeEnv("InputFromEmergency", input)
-    writeEnv("NodeInRegion", nodeInRegion)
+//    writeEnv("NodeInRegion", nodeInRegion)
   }
 }
