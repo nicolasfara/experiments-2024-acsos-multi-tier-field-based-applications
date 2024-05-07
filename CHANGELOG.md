@@ -1,3 +1,39 @@
+## [1.1.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.0.0...1.1.0) (2024-05-07)
+
+
+### Features
+
+* add SCR scenario with working code ([62dca4c](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/62dca4ce2d22e740353c25ecafcf535fe5c50af1))
+
+
+### Dependency updates
+
+* **deps:** update alchemist to v33.1.1 ([281b9f4](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/281b9f4cc1e62bcc41ce04fe9be1831e066f23e7))
+* **deps:** update alchemist to v33.1.2 ([12cb848](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/12cb84849990a5ff7aa8d292652f4e0f05339408))
+* **deps:** update alchemist to v34 ([f7d9e98](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/f7d9e98bc9561984feb8076f9e3bd0b638553ca3))
+
+
+### Build and continuous integration
+
+* **deps:** update danysk/build-check-deploy-gradle-action action to v2.4.18 ([a9a61c2](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/a9a61c22794f02b030e9395ceeca280e363714a6))
+
+
+### General maintenance
+
+* **data:** generate more data for SCR scenario ([5f19653](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/5f196530486f5ce5c3fc2f00d40dc6bebd247eb6))
+* deps + formatter ([cc120c7](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/cc120c76979df2b6e8c6b7d827183a563f847c2e))
+* **release:** update gradle.properties .env versions to 1.0.0 [skip ci] ([d8240e8](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/d8240e88c16f415123e9875c0e9d2e6ed8b8d58f))
+
+
+### Style improvements
+
+* prettify code ([6125637](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/612563702bc09410332fcc5aaa25eaa1a96689c1))
+
+
+### Refactoring
+
+* link wearable nodes to the nearest edge server ([17a05f8](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/17a05f8f30fea8121d587bde2872d727945ed3c2))
+
 ## 1.0.0 (2024-04-27)
 
 
