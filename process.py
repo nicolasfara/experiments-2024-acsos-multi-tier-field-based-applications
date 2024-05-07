@@ -1,9 +1,7 @@
 import numpy as np
-import seaborn.objects
 import xarray as xr
 import re
 from pathlib import Path
-import collections
 
 
 def distance(val, ref):
@@ -198,7 +196,7 @@ if __name__ == '__main__':
     # How to name the summary of the processed data
     pickleOutput = 'data_summary'
     # Experiment prefixes: one per experiment (root of the file name)
-    experiments = ['stable-gradient']
+    experiments = ['stable-gradient', 'stable-scr']
     floatPrecision = '{: 0.3f}'
     # Number of time samples 
     timeSamples = 1000
@@ -487,8 +485,15 @@ if __name__ == '__main__':
     dataset = means['stable-gradient']
     data_with_nodes = dataset.mean(dim=['surrogateFrequency'], skipna=True)
     data_with_nodes = data_with_nodes.to_dataframe().reset_index()
-    data_with_nodes = data_with_nodes.melt(id_vars=['nodeCount', 'time', 'scenario'], var_name='metric',
-                                           value_name='value')
+    data_with_nodes = data_with_nodes.melt(
+        id_vars=['nodeCount', 'time', 'scenario'],
+        var_name='metric',
+        value_name='value'
+    )
+
+    potential_error = dataset.mean(dim=['surrogateFrequency'], skipna=True)
+    potential_error = potential_error.sel({'scenario': 'monolithic'}) - potential_error.sel({'scenario': 'offloaded'})
+    potential_error = potential_error.rename({'potential[sum]': 'error'})
 
     # p = (
     #     sns.objects.Plot(data_with_nodes, x='time', y='value', color='scenario')
@@ -501,47 +506,99 @@ if __name__ == '__main__':
     # )
     # p.show()
 
-    p = sns.FacetGrid(data_with_nodes, col='nodeCount', sharey=False, sharex=True, height=6, aspect=1.5, legend_out=False)
-    p.map_dataframe(sns.lineplot, x='time', y='value', hue='scenario', palette='viridis')
-    p.fig.suptitle('Gradient Convergence', fontsize=26)
-    p.add_legend()
-    p.tight_layout()
+    # ------ Plot convergence
+    gradient_plot = sns.FacetGrid(
+        data_with_nodes,
+        col='nodeCount',
+        sharey=False,
+        sharex=True,
+        height=5,
+        aspect=1.5,
+        legend_out=False
+    )
+    gradient_plot.map_dataframe(sns.lineplot, x='time', y='value', hue='scenario', palette='viridis')
+    gradient_plot.fig.suptitle('Gradient Convergence', fontsize=26)
+    gradient_plot.set_ylabels('Potential')
+    gradient_plot.add_legend()
+    gradient_plot.tight_layout()
 
-    for ax in p.axes.flatten():
+    for ax in gradient_plot.axes.flatten():
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+    gradient_plot.savefig(f'{output_directory}/gradient_convergence.pdf')
+
+    # ------ Plot convergence error
+    error_plot = sns.FacetGrid(
+        potential_error.to_dataframe().reset_index(),
+        col='nodeCount',
+        sharey=False,
+        sharex=True,
+        height=5,
+        aspect=1.5,
+        legend_out=False
+    )
+    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red')
+    error_plot.fig.suptitle('Gradient Convergence Error', fontsize=26)
+    error_plot.set_ylabels('Error')
+    error_plot.tight_layout()
+
+    for ax in error_plot.axes.flatten():
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+    error_plot.savefig(f'{output_directory}/gradient_convergence_error.pdf')
+
+    # ------ PLot SCR convergence regions
+    scr_dataset = means['stable-scr']
+    scr_data = scr_dataset.mean(dim=['surrogateFrequency'], skipna=True)
+
+    scr_data = scr_data.to_dataframe().reset_index()
+    scr_data = scr_data.melt(
+        id_vars=['nodeCount', 'time', 'scenario', 'RegionCount'],
+        var_name='metric',
+        value_name='value'
+    )
+    print(scr_data)
+
+    scr_plot = sns.FacetGrid(
+        scr_data,
+        col='nodeCount',
+        sharey=False,
+        sharex=True,
+        height=5,
+        aspect=1.5,
+        legend_out=False
+    )
+    scr_plot.map_dataframe(sns.lineplot, x='time', y='RegionCount', hue='scenario', palette='viridis')
+    scr_plot.fig.suptitle('SCR Convergence', fontsize=26)
+    scr_plot.set_ylabels('RegionsCount')
+    scr_plot.add_legend()
+    scr_plot.tight_layout()
+
+    # for ax in scr_plot.axes.flatten():
+    #     ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+
+    scr_plot.savefig(f'{output_directory}/scr_convergence.pdf')
+
+    # ------ Plot SCR convergence error
+    potential_error = scr_dataset.mean(dim=['surrogateFrequency'], skipna=True)
+    potential_error = potential_error.sel({'scenario': 'monolithic'}) - potential_error.sel({'scenario': 'offloaded'})
+    potential_error = potential_error.rename({'potential[sum]': 'error'})
+
+    error_plot = sns.FacetGrid(
+        potential_error.to_dataframe().reset_index(),
+        col='nodeCount',
+        sharey=False,
+        sharex=True,
+        height=5,
+        aspect=1.5,
+        legend_out=False
+    )
+    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red')
+    error_plot.fig.suptitle('SCR Convergence Error', fontsize=26)
+    error_plot.set_ylabels('Error')
+    error_plot.tight_layout()
+
+    for ax in error_plot.axes.flatten():
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
+    error_plot.savefig(f'{output_directory}/scr_convergence_error.pdf')
+
     plt.show()
-
-    # p = (
-    #     sns.objects.Plot(data_with_nodes, x='time', y='potential[sum]')
-    #     .facet(col='nodeCount', row='scenario')
-    #     .add(sns.objects.Lines())
-    # )
-    # p.save(f'${output_directory}/plot.pdf')
-
-    # mono = (means["multiTier"].sel(
-    #     {'scenario': 'monolithic\n', 'nodeCount': 50.0, 'surrogateFrequency': 10.0}
-    # )["potential[sum]"].to_dataframe().drop(columns=['scenario', 'nodeCount', 'surrogateFrequency'])
-    #         .rename(columns={"potential[sum]": "potential[monolithic]"})).reset_index()
-    # multi = (means["multiTier"].sel(
-    #     {'scenario': 'offloaded\n', 'nodeCount': 50.0, 'surrogateFrequency': 10.0}
-    # )["potential[sum]"].to_dataframe().drop(columns=['scenario', 'nodeCount', 'surrogateFrequency'])
-    #          .rename(columns={"potential[sum]": "potential[offloaded]"})).reset_index()
-    # result = mono.merge(multi, how='inner', on='time')
-    # result["error"] = result.apply(lambda x: x["potential[offloaded]"] - x["potential[monolithic]"], axis=1)
-    # errors = result[["time", "error"]].copy()
-    # print(errors)
-    #
-    # result = result.drop(columns=['error'])
-    # result = result.melt(id_vars='time', var_name='potential', value_name='value')
-    # print(result)
-    #
-    # fig, ax1 = plt.subplots()
-    # ax2 = ax1.twinx()
-    #
-    # sns.lineplot(data=result, x='time', y='value', hue='potential', ax=ax1)
-    # sns.lineplot(data=errors, x='time', y='error', ax=ax2, color='red')
-    # ax1.set_ylim(110500, 120000)
-    # ax2.set_ylim(-350, 350)
-    #
-    # plt.show()
