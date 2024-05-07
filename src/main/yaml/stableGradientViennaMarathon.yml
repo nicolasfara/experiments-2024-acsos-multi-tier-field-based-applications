@@ -1,0 +1,166 @@
+incarnation: scafi
+
+variables:
+  seed: &seed
+    min: 0
+    max: 15
+    step: 1
+    default: 0
+  applicativeRange: &applicativeRange
+    formula: 2000.0
+  edgeRange: &edgeRange
+    formula: 7000.0
+  moveFrequency: &moveFrequency
+    formula: 1.0 / 2
+    language: scala
+  edgeTarget: &edgeTarget
+    language: scala
+    formula: |
+      s"""
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      new SurrogateNode("EdgeServer")
+      """
+  localTarget: &localTarget
+    language: scala
+    formula: |
+      s"""
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      LocalNode
+      """
+  # real variables
+  nodeCount: &nodeCount
+    type: ArbitraryVariable
+    parameters: [200, [50, 100, 200]]
+  surrogateFrequency: &surrogateFrequency
+    type: ArbitraryVariable
+    parameters: [20, [1, 10, 20]]
+  scenario:
+    type: ArbitraryVariable
+    parameters: [monolithic, [monolithic, offloaded]]
+  programDag: &programDag
+    language: scala
+    formula: |
+      Map("it.unibo.modularization.Gradient" -> List[String]())
+  allocation:
+    language: scala
+    formula: |
+      import it.unibo.alchemist.model.{Target, LocalNode, SurrogateNode}
+      Map(
+        "monolithic" -> Map("it.unibo.modularization.Gradient" -> LocalNode),
+        "offloaded" -> Map("it.unibo.modularization.Gradient" -> new SurrogateNode("EdgeServer"))
+      )
+  actualAllocation: &actualAllocation
+    language: scala
+    formula: |
+      import it.unibo.alchemist.model.Target
+      allocation.asInstanceOf[Map[String, Map[String, Target]]](scenario.asInstanceOf[String])
+
+_constants:
+  retentionTime: &retentionTime 25.0
+
+seeds:
+  scenario: *seed
+  simulation: *seed
+
+network-model:
+  type: ThreeTierConnection #*connectionType
+  parameters: [*applicativeRange, *edgeRange]
+
+_reproduceGpsTrace: &ReproduceGPSTrace
+  type: GPSTraceWalker
+  parameters: ["vcmuser.gpx", false, AlignToTime, [1365922800, false, false]]
+
+_programs:
+  - program: &runtime
+      - time-distribution: 0.5
+        type: Event
+        actions:
+          - type: ModularizationRuntime
+
+  - program: &surrogateEmergencyService
+    - time-distribution: *surrogateFrequency
+      type: Event
+      actions:
+        - type: RunSurrogateScafiProgram
+          parameters: [ it.unibo.modularization.Gradient, *retentionTime, *programDag ]
+    - program: sendSurrogate
+
+  - program: &emergencyService
+    - time-distribution: 0.5
+      type: Event
+      actions:
+        - type: RunScafiProgram
+          parameters: [ it.unibo.modularization.Gradient, *retentionTime, *programDag ]
+    - program: send
+
+  - program: &moveWithTraces
+    - time-distribution: *moveFrequency
+      type: Event
+      actions:
+        - *ReproduceGPSTrace
+
+environment:
+  type: OSMEnvironment
+  parameters: ["vcm.pbf", false]
+
+deployments:
+#  - type: SpecificPositions # Cloud Instance
+#    parameters: [[ 48.3081743, 16.4736189 ]]
+#    programs:
+#      - *surrogateEmergencyService
+#    contents:
+#      - molecule: Target
+#        concentration: *cloudTarget
+#      - molecule: CloudInstance
+#        concentration: true
+
+  - type: SpecificPositions # Edge Servers
+    parameters: [
+      [ 48.2152226, 16.3816613 ],
+      [ 48.2366507, 16.3838339 ],
+      [ 48.2146077, 16.3485146 ],
+      [ 48.2055562, 16.3778687 ],
+      [ 48.1924837, 16.3458967 ],
+      [ 48.1879776, 16.3616896 ],
+      [ 48.1728973, 16.3443303 ],
+      [ 48.2568980, 16.4036303 ],
+    ]
+    programs:
+      - *surrogateEmergencyService
+#      - *emergencyService
+    contents:
+      - molecule: Target
+        concentration: *edgeTarget
+      - molecule: EdgeServer
+        concentration: true
+
+  - type: FromGPSTrace
+    parameters: [ *nodeCount, "vcmuser.gpx", false, AlignToTime, [ 1365922800, false, false ] ]
+    programs:
+      - *runtime
+      - *emergencyService
+      - *moveWithTraces
+    properties:
+      - type: AllocatorProperty
+        parameters: [ *actualAllocation ]
+    contents:
+      - molecule: Target
+        concentration: *localTarget
+      - molecule: WearableDevice
+        concentration: true
+
+export:
+  - type: CSVExporter
+    parameters:
+      fileNameRoot: "stable-gradient"
+      interval: 1
+      exportPath: "data"
+    data:
+      - time
+      - molecule: potential
+        aggregators: [sum]
+        value-filter: onlyfinite
+
+terminate:
+  type: AfterTime
+  parameters: 1800
