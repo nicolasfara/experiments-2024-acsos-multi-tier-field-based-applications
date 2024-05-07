@@ -1,3 +1,15 @@
+## [1.2.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.1.0...1.2.0) (2024-05-07)
+
+
+### Features
+
+* add emergency service scenario ([d1d8ab3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/d1d8ab38ad12490dfdc72cd0b839ef0bdfd8688c))
+
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.1.0 [skip ci] ([7d1d702](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/7d1d7025d2dfde537437cce63b30d2312a475cad))
+
 ## [1.1.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.0.0...1.1.0) (2024-05-07)
 
 
