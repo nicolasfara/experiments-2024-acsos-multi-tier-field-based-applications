@@ -3,21 +3,31 @@ package it.unibo.alchemist.model
 import it.unibo.alchemist.model.molecules.SimpleMolecule
 import org.apache.commons.math3.random.RandomGenerator
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 class PowerModelProperty[T, P <: Position[P]](
     private val environment: Environment[T, P],
     private val node: Node[T],
     private val random: RandomGenerator,
-    private val deviceEnergyPerInstruction: Double, // mJ
+    private val deviceEnergyPerInstruction: Double, // nJ
     private val componentInstructionsCount: Int,
-    private val batteryCapacity: Double = 4000.0 // mAh
+    private val batteryCapacity: Double = 4000.0, // mAh
 ) extends NodeProperty[T] {
 
-  private val osInstructionsCount = 20e6
-  private val networkInstructionsCount = 100e6
+  private lazy val allocator = node.getProperties
+    .asScala
+    .filter(_.isInstanceOf[AllocatorProperty[T, P]])
+    .map(_.asInstanceOf[AllocatorProperty[T, P]])
+    .head
+
+  private val osInstructionsCount = 1
+  private val networkInstructionsCount = 3
 
   private var previousTime = 0.0
-  private var currentBatteryLevel = batteryCapacity
+  private var currentBatteryLevel = batteryCapacity * random.nextDouble()
   private var messagesProcessedSinceLastUpdate = 0
+
+  def getBatteryLevel: Double = currentBatteryLevel
 
   def updatePowerModelForNode(): Unit = {
     val deltaTime = currentSimulationTime - previousTime
@@ -27,11 +37,13 @@ class PowerModelProperty[T, P <: Position[P]](
   }
 
   private def dischargeBattery(deltaTime: Double): Unit = {
-    val joulesConsumedByComponent = deviceEnergyPerInstruction * componentInstructionsCount
-    val joulesConsumedByOs = deviceEnergyPerInstruction * (osInstructionsCount * random.nextGaussian())
-    val joulesConsumedByNetwork = deviceEnergyPerInstruction * networkInstructionsCount * messagesProcessedSinceLastUpdate
+    val joulesConsumedByComponent = deviceEnergyPerInstruction * componentInstructionsCount * 1e-3
+    val joulesConsumedByOs = deviceEnergyPerInstruction * (osInstructionsCount * random.nextDouble()) * 1e-3
+    val joulesConsumedByNetwork = deviceEnergyPerInstruction * networkInstructionsCount * messagesProcessedSinceLastUpdate * 1e-3
 
-    val consumedWatt = toWatt(joulesConsumedByComponent + joulesConsumedByOs + joulesConsumedByNetwork, deltaTime)
+    val localComponents = allocator.getComponentsAllocation.count(_._2 == LocalNode)
+
+    val consumedWatt = toWatt(joulesConsumedByComponent * localComponents + joulesConsumedByOs + joulesConsumedByNetwork, deltaTime)
     // Supposing a smartphone battery voltage of 3.7V
     val consumedMilliAmpsInDelta = toMilliAmps(consumedWatt, 3.7)
     if (currentBatteryLevel - consumedMilliAmpsInDelta < 0) {

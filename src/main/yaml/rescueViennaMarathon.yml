@@ -34,7 +34,7 @@ variables:
   surrogateFrequency: &surrogateFrequency
     type: ArbitraryVariable
     parameters: [10, [1, 10, 20]]
-  scenario:
+  scenario: &scenario
     type: ArbitraryVariable
     parameters: [offloaded, [monolithic, offloaded]]
   programDag: &programDag
@@ -82,6 +82,7 @@ _programs:
         type: Event
         actions:
           - type: ModularizationRuntime
+            parameters: [ *scenario ]
 
   - program: &surrogateEmergencyComponent
       - time-distribution: *surrogateFrequency
@@ -167,6 +168,8 @@ deployments:
     properties:
       - type: AllocatorProperty
         parameters: [ *actualAllocation ]
+      - type: PowerModelProperty
+        parameters: [1.0, 10.0, 4000.0] # EPI, Instructions, Battery capacity
     contents:
       - molecule: Target
         concentration: *localTarget
@@ -181,10 +184,9 @@ export:
       exportPath: "data"
     data:
       - time
-      - molecule: potential
-        aggregators: [sum]
+      - molecule: BatteryLevel
+        aggregators: [sum, mean, min, max, variance]
         value-filter: onlyfinite
-      - type: RegionCountExporter
 
 terminate:
   type: AfterTime
