@@ -187,6 +187,9 @@ export:
       - molecule: BatteryLevel
         aggregators: [sum, mean, min, max, variance]
         value-filter: onlyfinite
+      - molecule: MessagesExchanged
+        aggregators: [sum, mean, min, max, variance]
+        value-filter: onlyfinite
 
 terminate:
   type: AfterTime

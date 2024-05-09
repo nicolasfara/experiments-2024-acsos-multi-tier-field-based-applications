@@ -31,6 +31,7 @@ class SendScafiMessage[T, P <: Position[P]](
   assert(program != null, "Program cannot be null")
 
   private val targetMolecule = new SimpleMolecule("Target")
+  private var messagesExchanged = 0
 
   /** This method allows to clone this action on a new node. It may result useful to support runtime creation of nodes with the same reaction
     * programming, e.g. for morphogenesis.
@@ -48,6 +49,8 @@ class SendScafiMessage[T, P <: Position[P]](
     // Send to physical neighbors
     val applicativeNeighbors = getNeighborsWithTarget(LocalNode)
     applicativeNeighbors.foreach(sendToNode)
+    messagesExchanged = applicativeNeighbors.size
+    getNode.setConcentration(new SimpleMolecule("MessagesExchanged"), messagesExchanged.asInstanceOf[T])
 
     // Get programs to input the computed value
     for {

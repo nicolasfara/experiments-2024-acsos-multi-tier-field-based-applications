@@ -5,6 +5,7 @@ import it.unibo.alchemist.model.ScafiIncarnationUtils._
 import it.unibo.alchemist.model.implementations.nodes.ScafiDevice
 import it.unibo.alchemist.model._
 import it.unibo.alchemist.model.actions.AbstractAction
+import it.unibo.alchemist.model.molecules.SimpleMolecule
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist.ID
 import it.unibo.utils.ScalaJavaInterop.EnvironmentOps
 
@@ -20,6 +21,7 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
   assert(program != null, "Program cannot be null")
 
   override def getContext: Context = Context.NEIGHBORHOOD
+  private var messageExchanged = 0
 
   override def cloneAction(destinationNode: Node[T], reaction: Reaction[T]): Action[T] = ???
 
@@ -38,6 +40,8 @@ class SendSurrogateScafiMessage[T, P <: Position[P]](
         localProgram.setResultWhenOffloaded(toSend.exportData.root())
       }
     })
+    messageExchanged = program.isSurrogateFor.size
+    getNode.setConcentration(new SimpleMolecule("MessagesExchanged"), messageExchanged.asInstanceOf[T])
     program.prepareForComputationalCycle()
   }
 
