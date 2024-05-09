@@ -1,3 +1,34 @@
+## [1.3.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.2.0...1.3.0) (2024-05-09)
+
+
+### Features
+
+* generate new charts ([d5b4aa8](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/d5b4aa836a9d964497d06cdcee18b02a926afa95))
+
+
+### Dependency updates
+
+* **deps:** update alchemist to v34.0.2 ([1b25346](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/1b25346d2e8ab38b0b6f09ef3e7e8edd40c10026))
+* **deps:** update alchemist to v34.0.3 ([171b007](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/171b007251ecfb1f060c26567c4315e88d47ac7d))
+* **deps:** update node.js to 20.13 ([6246eed](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/6246eedd9809ec90fc963b9ac38658bec961363a))
+* **deps:** update plugin kotlin-qa to v0.62.0 ([863ccaa](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/863ccaa851ea5a8c6606464d8006a2d7a240c1a3))
+
+
+### Bug Fixes
+
+* minor fixes in rescue scenario ([5760752](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/5760752c4c4c6fa2b522bef68d5ebb1f7eb2bce7))
+
+
+### Build and continuous integration
+
+* **deps:** update actions/checkout action to v4.1.5 ([65b79f0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/65b79f088dfa77ee7a4fb3e0074429d7e1bc2d4a))
+
+
+### General maintenance
+
+* **data:** generate data for rescue scenario ([9877784](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/98777842c0f47077f52207ff82a59fdb5798bdcd))
+* **release:** update gradle.properties .env versions to 1.2.0 [skip ci] ([d6869a5](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/d6869a55da053b5b2aaa7640eddb338295acbbdb))
+
 ## [1.2.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.1.0...1.2.0) (2024-05-07)
 
 
