@@ -196,7 +196,7 @@ if __name__ == '__main__':
     # How to name the summary of the processed data
     pickleOutput = 'data_summary'
     # Experiment prefixes: one per experiment (root of the file name)
-    experiments = ['stable-gradient', 'stable-scr']
+    experiments = ['stable-gradient', 'stable-scr', 'rescue']
     floatPrecision = '{: 0.3f}'
     # Number of time samples 
     timeSamples = 1000
@@ -479,10 +479,44 @@ if __name__ == '__main__':
 
     sns.color_palette("viridis", as_cmap=True)
     sns.set_palette("viridis")
-    sns.set_style("white")
+    sns.set_style("white", { 'axes.grid': True })
     sns.set(font_scale=1.5)
 
     dataset = means['stable-gradient']
+
+    # ------ Plot convergence time and errors
+    convergence_time_error = dataset.mean(dim=['nodeCount'], skipna=True)
+    convergence_time_error = convergence_time_error.sel({'scenario': 'monolithic'}) - convergence_time_error.sel({'scenario': 'offloaded'})
+    convergence_time_error = convergence_time_error.apply(np.fabs)
+    convergence_time_error = convergence_time_error.rename({'potential[sum]': 'error'})
+
+    convergence_time_error = convergence_time_error.to_dataframe().reset_index()
+    convergence_time_error = convergence_time_error.melt(
+        id_vars=['time', 'surrogateFrequency'],
+        var_name='delta_error',
+        value_name='value',
+    )
+    print(convergence_time_error)
+
+    pp = sns.catplot(
+        data=convergence_time_error,
+        x='surrogateFrequency',
+        y='value',
+        color='red',
+        height=6,
+        aspect=1.8,
+        kind="point",
+    )
+
+    # pp.set_title('Average Error with Execution Frequencies')
+    pp.fig.suptitle('Average Error with Execution Frequencies', fontsize=26)
+    pp.set_ylabels('Error')
+    pp.set_xlabels('Execution Frequency (Hz)')
+    pp.tight_layout()
+    pp.savefig(f'{output_directory}/convergence_time_error.pdf')
+
+    # ------ Plot convergence time
+
     data_with_nodes = dataset.mean(dim=['surrogateFrequency'], skipna=True)
     data_with_nodes = data_with_nodes.to_dataframe().reset_index()
     data_with_nodes = data_with_nodes.melt(
@@ -493,6 +527,7 @@ if __name__ == '__main__':
 
     potential_error = dataset.mean(dim=['surrogateFrequency'], skipna=True)
     potential_error = potential_error.sel({'scenario': 'monolithic'}) - potential_error.sel({'scenario': 'offloaded'})
+    potential_error = potential_error.apply(np.fabs)
     potential_error = potential_error.rename({'potential[sum]': 'error'})
 
     # p = (
@@ -555,7 +590,6 @@ if __name__ == '__main__':
         var_name='metric',
         value_name='value'
     )
-    print(scr_data)
 
     scr_plot = sns.FacetGrid(
         scr_data,
@@ -580,6 +614,7 @@ if __name__ == '__main__':
     # ------ Plot SCR convergence error
     potential_error = scr_dataset.mean(dim=['surrogateFrequency'], skipna=True)
     potential_error = potential_error.sel({'scenario': 'monolithic'}) - potential_error.sel({'scenario': 'offloaded'})
+    potential_error = potential_error.apply(np.fabs)
     potential_error = potential_error.rename({'potential[sum]': 'error'})
 
     error_plot = sns.FacetGrid(
@@ -600,5 +635,65 @@ if __name__ == '__main__':
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
     error_plot.savefig(f'{output_directory}/scr_convergence_error.pdf')
+
+    # ------ Plot Power consumption
+    rescue_dataset = means['rescue']
+    rescue_dataset_sdtdev = stdevs['rescue']
+    rescue_dataset = rescue_dataset.mean(dim=['surrogateFrequency', 'nodeCount'], skipna=True)
+    rescue_dataset_sdtdev = rescue_dataset_sdtdev.mean(dim=['surrogateFrequency', 'nodeCount'], skipna=True)
+    rescue_dataset = rescue_dataset[['time', 'BatteryLevel[mean]', 'MessagesExchanged[sum]']]
+    rescue_dataset_sdtdev = rescue_dataset_sdtdev[['BatteryLevel[mean]', 'MessagesExchanged[sum]']]
+    rescue_dataset = rescue_dataset.to_dataframe().reset_index()
+    rescue_dataset_sdtdev = rescue_dataset_sdtdev.to_dataframe().reset_index()
+
+    power_data = rescue_dataset[["time", "scenario", "BatteryLevel[mean]"]]
+    power_data_std = rescue_dataset_sdtdev[["time", "scenario", "BatteryLevel[mean]"]]
+    messages_data = rescue_dataset[["time", "scenario", "MessagesExchanged[sum]"]]
+    messages_data_std = rescue_dataset_sdtdev[["time", "scenario", "MessagesExchanged[sum]"]]
+
+    power_data = power_data.melt(
+        id_vars=['time', 'scenario'],
+        var_name='metric',
+        value_name='value'
+    )
+    power_data_std = power_data_std.melt(
+        id_vars=['time', 'scenario'],
+        var_name='metric',
+        value_name='value'
+    )
+    messages_data = messages_data.melt(
+        id_vars=['time', 'scenario'],
+        var_name='metric',
+        value_name='value'
+    )
+    messages_data_std = messages_data_std.melt(
+        id_vars=['time', 'scenario'],
+        var_name='metric',
+        value_name='value'
+    )
+
+    fig, ax = plt.subplots(1, 2, figsize=(20, 5), layout='tight', sharey=False)
+    sns.lineplot(
+        data=power_data,
+        ax=ax[0],
+        x='time',
+        y='value',
+        hue='scenario',
+        palette='viridis'
+    )
+    ax[0].set_ylabel('Battery Level [mAh]')
+
+    sns.lineplot(
+        data=messages_data,
+        ax=ax[1],
+        x='time',
+        y='value',
+        hue='scenario',
+        palette='viridis'
+
+    )
+    ax[1].set_ylabel('Messages Exchanged')
+    fig.suptitle('Power Consumption and Messages Exchanged', fontsize=26)
+    fig.savefig(f'{output_directory}/power_consumption.pdf')
 
     plt.show()
