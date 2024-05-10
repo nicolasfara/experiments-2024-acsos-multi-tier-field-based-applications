@@ -475,12 +475,9 @@ if __name__ == '__main__':
     # Custom charting
 
     import seaborn as sns
-    import pandas as pd
 
-    sns.color_palette("viridis", as_cmap=True)
-    sns.set_palette("viridis")
-    sns.set_style("white", { 'axes.grid': True })
     sns.set(font_scale=1.5)
+    sns.set_style("whitegrid")
 
     dataset = means['stable-gradient']
 
@@ -506,6 +503,7 @@ if __name__ == '__main__':
         height=6,
         aspect=1.8,
         kind="point",
+        lw=2
     )
 
     # pp.set_title('Average Error with Execution Frequencies')
@@ -551,8 +549,8 @@ if __name__ == '__main__':
         aspect=1.5,
         legend_out=False
     )
-    gradient_plot.map_dataframe(sns.lineplot, x='time', y='value', hue='scenario', palette='viridis')
-    gradient_plot.fig.suptitle('Gradient Convergence', fontsize=26)
+    gradient_plot.map_dataframe(sns.lineplot, x='time', y='value', hue='scenario', palette='viridis', lw=2)
+    gradient_plot.fig.suptitle('Gradient Convergence and Error', fontsize=26)
     gradient_plot.set_ylabels('Potential')
     gradient_plot.add_legend()
     gradient_plot.tight_layout()
@@ -568,12 +566,13 @@ if __name__ == '__main__':
         sharey=False,
         sharex=True,
         height=5,
-        aspect=1.5,
+        aspect=1.8,
         legend_out=False
     )
-    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red')
-    error_plot.fig.suptitle('Gradient Convergence Error', fontsize=26)
+    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red', lw=2)
+    # error_plot.fig.suptitle('Gradient Convergence Error', fontsize=26)
     error_plot.set_ylabels('Error')
+    error_plot.set_titles(col_template="")
     error_plot.tight_layout()
 
     for ax in error_plot.axes.flatten():
@@ -600,8 +599,8 @@ if __name__ == '__main__':
         aspect=1.5,
         legend_out=False
     )
-    scr_plot.map_dataframe(sns.lineplot, x='time', y='RegionCount', hue='scenario', palette='viridis')
-    scr_plot.fig.suptitle('SCR Convergence', fontsize=26)
+    scr_plot.map_dataframe(sns.lineplot, x='time', y='RegionCount', hue='scenario', palette='viridis', lw=2)
+    scr_plot.fig.suptitle('SCR Convergence and Error', fontsize=26)
     scr_plot.set_ylabels('RegionsCount')
     scr_plot.add_legend()
     scr_plot.tight_layout()
@@ -623,12 +622,13 @@ if __name__ == '__main__':
         sharey=False,
         sharex=True,
         height=5,
-        aspect=1.5,
+        aspect=1.8,
         legend_out=False
     )
-    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red')
-    error_plot.fig.suptitle('SCR Convergence Error', fontsize=26)
+    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red', lw=2)
+    # error_plot.fig.suptitle('SCR Convergence Error', fontsize=26)
     error_plot.set_ylabels('Error')
+    error_plot.set_titles(col_template="")
     error_plot.tight_layout()
 
     for ax in error_plot.axes.flatten():
@@ -679,9 +679,10 @@ if __name__ == '__main__':
         x='time',
         y='value',
         hue='scenario',
-        palette='viridis'
+        palette='viridis',
+        lw=2
     )
-    ax[0].set_ylabel('Battery Level [mAh]')
+    ax[0].set_ylabel('Battery Level (mAh)')
 
     sns.lineplot(
         data=messages_data,
@@ -689,7 +690,8 @@ if __name__ == '__main__':
         x='time',
         y='value',
         hue='scenario',
-        palette='viridis'
+        palette='viridis',
+        lw=2
 
     )
     ax[1].set_ylabel('Messages Exchanged')
