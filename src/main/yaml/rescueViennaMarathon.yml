@@ -51,7 +51,7 @@ variables:
           "it.unibo.modularization.SteeringComponent" -> LocalNode,
         ),
         "offloaded" -> Map(
-          "it.unibo.modularization.EmergencyComponent" -> new SurrogateNode("EdgeServer"),
+          "it.unibo.modularization.EmergencyComponent" -> LocalNode,
           "it.unibo.modularization.SteeringComponent" -> LocalNode,
         )
       )

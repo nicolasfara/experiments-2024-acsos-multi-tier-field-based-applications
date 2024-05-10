@@ -58,7 +58,7 @@ class AllocatorProperty[T, P <: Position[P]](
             case Some(oldComponent) =>
               oldComponent.removeSurrogateFor(node.getId)
               physicalComponentsAllocations.remove(component)
-            case None => throw new IllegalStateException(s"Component $component of node ${node.getId} is not offloaded to any node")
+            case None => () // throw new IllegalStateException(s"Component $component of node ${node.getId} is not offloaded to any node")
           }
           target match {
             case LocalNode                          => physicalComponentsAllocations.put(component, node.getId) // Move to local
