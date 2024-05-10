@@ -1,3 +1,23 @@
+## [1.3.1](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.3.0...1.3.1) (2024-05-10)
+
+
+### Dependency updates
+
+* **deps:** update dependency org.jetbrains.kotlin.jvm to v1.9.24 ([82ca81a](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/82ca81a0cc2268d6e813b55add06866bfe9210d2))
+* **deps:** update plugin gitsemver to v3.1.5 ([722bcb3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/722bcb36e84204d7748cb5eed58b3d1a741aa46e))
+
+
+### Bug Fixes
+
+* fix code scenario ([cac62dc](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/cac62dc9ecd728275bd5545fb994b5f49d9176d8))
+
+
+### General maintenance
+
+* generate new data ([76cba31](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/76cba3178a926e395e6cf9b57e10853a5e69e6ce))
+* **release:** update gradle.properties .env versions to 1.3.0 [skip ci] ([4bab294](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/4bab294c3609394f9a2e9f1b855bfb3a1f235e7e))
+* update charts ([458542d](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/458542d9b73c2bbe4e882026d35a29a119ab81dd))
+
 ## [1.3.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.2.0...1.3.0) (2024-05-09)
 
 
