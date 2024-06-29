@@ -2,6 +2,7 @@ package it.unibo.modularization
 
 import it.unibo.alchemist.model.scafi.ScafiIncarnationForAlchemist._
 import Builtins.Bounded
+import it.unibo.alchemist.model.Position
 
 private case class Candidacy(symBreaker: Int, distance: Double, leaderId: Int)
 
@@ -28,15 +29,15 @@ class EmergencyComponent extends MyAggregateProgram {
     writeEnv("leaderId", leaderId)
     val collectData = C[Double, Map[ID, Double]](regionPotential, _ ++ _, Map(mid() -> randomGenerator().nextGaussian()), Map())
     val nodeRequiredInterventionLocal = checkForEmergency(collectData)
-    val nodeRequiredIntervention = G[Option[ID]](isLeader, nodeRequiredInterventionLocal, identity, nbrRange _)
+    val nodeRequiredIntervention = G[Option[(ID, Position[_])]](isLeader, nodeRequiredInterventionLocal, identity, nbrRange _)
     writeEnv("nodeRequiredIntervention", nodeRequiredIntervention)
     nodeRequiredIntervention
   }
 
-  private def checkForEmergency(regionData: Map[ID, Double]): Option[ID] = regionData.toList
+  private def checkForEmergency(regionData: Map[ID, Double]): Option[(ID, Position[_])] = regionData.toList
     .sortBy(_._2)
     .find(_._2 > 0.9)
-    .map(_._1)
+    .map { case (id, _) => id -> alchemistEnvironment.getPosition(alchemistEnvironment.getNodeByID(id)) }
 
   import BoundedMessage._
 
