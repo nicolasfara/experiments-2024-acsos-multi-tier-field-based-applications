@@ -1,3 +1,20 @@
+## [1.4.1](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.0...1.4.1) (2024-06-30)
+
+
+### Bug Fixes
+
+* use viridis palette for error plot ([8806299](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/8806299f88219d92342ff2dc4b7abbc163cbec3f))
+
+
+### Documentation
+
+* update readme ([ed9c6bb](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/ed9c6bb56bfdf7334a9390124cc327713c770698))
+
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.4.0 [skip ci] ([358184a](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/358184a974436986c713dd57dbc4699a9bdbc741))
+
 ## [1.4.0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.3.1...1.4.0) (2024-06-29)
 
 
