@@ -1,8 +1,17 @@
-# Alchemist Experiments Bootstrap
+# Flexible Self-organisation for the Cloud-Edge Continuum: a Macro-programming Approach - Experiments
+
+In this repository, we provide the code and data to reproduce the experiments for the ACSOS 2024 paper
+"Flexible Self-organisation for the Cloud-Edge Continuum: a Macro-programming Approach".
 
 ## Reproduce the entire experiment
 
 **WARNING**: re-running the whole experiment may take a very long time on a normal computer.
+
+In the [data](./data) folder (~37MB of data) you can find the already generated data,
+ensuring a more lightweight process for charts reproduction and verification.
+
+A good internet connection is required to download the necessary dependencies,
+in a reasonable amount of time.
 
 ### Reproduce with containers (recommended)
 
