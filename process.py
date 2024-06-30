@@ -567,9 +567,10 @@ if __name__ == '__main__':
         sharex=True,
         height=5,
         aspect=1.8,
-        legend_out=False
+        legend_out=False,
+        palette='viridis',
     )
-    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red', lw=2)
+    error_plot.map_dataframe(sns.lineplot, x='time', y='error', lw=2)
     # error_plot.fig.suptitle('Gradient Convergence Error', fontsize=26)
     error_plot.set_ylabels('Error')
     error_plot.set_titles(col_template="")
@@ -623,9 +624,10 @@ if __name__ == '__main__':
         sharex=True,
         height=5,
         aspect=1.8,
-        legend_out=False
+        legend_out=False,
+        palette='viridis',
     )
-    error_plot.map_dataframe(sns.lineplot, x='time', y='error', color='red', lw=2)
+    error_plot.map_dataframe(sns.lineplot, x='time', y='error', lw=2)
     # error_plot.fig.suptitle('SCR Convergence Error', fontsize=26)
     error_plot.set_ylabels('Error')
     error_plot.set_titles(col_template="")
