@@ -56,3 +56,6 @@ so that the charts can be regenerated without having to run the experiment again
 To regenerate the charts, run `docker compose run --no-deps charts`.
 Alternatively, follow the steps or the "reproduce natively" section,
 starting after the part describing how to re-launch the simulations.
+
+The charts used in the paper are available in the root of the `charts` folder.
+The `charts/rescue`, `charts/stable-gradient`, and `charts/stable-scr` folders contain the charts for the respective experiments by comparing each simulation variable.
