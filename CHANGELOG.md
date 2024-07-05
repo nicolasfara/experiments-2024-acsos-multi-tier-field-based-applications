@@ -1,3 +1,21 @@
+## [1.4.2](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.1...1.4.2) (2024-07-05)
+
+
+### Dependency updates
+
+* **deps:** update dependency matplotlib to v3.9.1 ([08557ef](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/08557ef1404f008f5a3e27b9cc2852abec18c54e))
+
+
+### Documentation
+
+* improve instructions ([8aae10e](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/8aae10e5f7e064574786ad7241050ab180a17f7f))
+* improve readme instructions ([e22483b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/e22483b43d31becf04963906f0ec4867d4325483))
+
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.4.1 [skip ci] ([054a24e](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/054a24e474b0853a7c67edc74f3fa5ef076764dc))
+
 ## [1.4.1](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.0...1.4.1) (2024-06-30)
 
 
