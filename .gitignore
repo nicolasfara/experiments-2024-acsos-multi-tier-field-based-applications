@@ -7,3 +7,4 @@ charts/
 env/
 data_summary_*
 timeprocessed
+node_modules/
