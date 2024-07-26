@@ -1,3 +1,49 @@
+## [1.4.3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.2...1.4.3) (2024-07-26)
+
+### Dependency updates
+
+* **deps:** update alpine docker tag to v3.20.2 ([9d0061b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/9d0061b2117f4cc8bcc1537852d232058a3de5e7))
+* **deps:** update dependency gradle to v8.9 ([566092f](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/566092ffe5a00bcb8058aff3508f727dafa444b6))
+* **deps:** update dependency org.danilopianini:thread-inheritable-resource-loader to v0.3.7 ([5fcebf3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/5fcebf32ceb26c359e9032e196bc24ecc5cad581))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.86 ([fdbdbb4](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/fdbdbb4c54897b6068cc13a58a7b1fe4825fbc3d))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.87 ([6f9830f](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/6f9830f4c81c6c3324b114044516246f3e7f211b))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.89 ([e6f80d2](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/e6f80d2e08e6b2b4fb666f82430bb96807fd0979))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.90 ([8f8f2d8](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/8f8f2d87983be4935edf0ad7880d031561209d20))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.91 ([5bd47a3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/5bd47a34b84791393861fbf675f250e4df9626ec))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.92 ([2b1a52b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/2b1a52be15f9d6ffeceb4e9b6edfb5b8bf39ebe5))
+* **deps:** update node.js to 20.16 ([4d641f5](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/4d641f5a593f1469a0ae567c3686026e08702d54))
+* **deps:** update plugin kotlin-qa to v0.62.4 ([c321b52](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/c321b52c31655db0b9322456486c2084f791fb1c))
+* **deps:** update plugin kotlin-qa to v0.63.0 ([e79cf57](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/e79cf571d3fa5943b28b71e31c6b9453d4ebb4d9))
+* **deps:** update plugin multijvmtesting to v1 ([948c1be](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/948c1bedce39e86d8b2db87cf1225f608aeeb5ac))
+* **deps:** update plugin multijvmtesting to v1.0.3 ([22a771f](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/22a771fcc48672c04ae429e65b9320700d112835))
+* **deps:** update plugin multijvmtesting to v1.0.4 ([7a31507](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/7a315072fa884ef3fa790186e1673e40cc26eafb))
+* **deps:** update plugin multijvmtesting to v1.1.0 ([3fb920a](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/3fb920acd77d7494a732afe9eb57c6ce93d1705d))
+* **deps:** update plugin multijvmtesting to v1.2.2 ([7aaf8ff](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/7aaf8ff3b382a2a6442701504acd18368a8348d0))
+* **deps:** update semnatic release tool ([6542b41](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/6542b411161dccae43105e21d145bf1bbb18aed4))
+
+### Bug Fixes
+
+* solved a crash in simulation when running runRescueViennaMarathonGraphics scenario ([79962e0](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/79962e064c4e2b913f34f28aa3c50d5d03d247ab))
+
+### Build and continuous integration
+
+* **deps:** update actions/download-artifact action to v4.1.8 ([da2710b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/da2710bdb4dccd4d355b4a47175775b26e8f7e3b))
+* **deps:** update actions/setup-node action to v4.0.3 ([25e59d6](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/25e59d654fe796b14f544af4ca029f3f844bc46a))
+* **deps:** update actions/setup-python action to v5.1.1 ([2fa6800](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/2fa68005179a38b6d2d1efc413358cee0e54cee7))
+* **deps:** update actions/upload-artifact action to v4.3.4 ([ffc895e](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/ffc895ee24efb7be1614ed90482c7e63868b59ec))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.1.0 ([001e627](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/001e6277bae86d5efa3abec8421700254fa8c678))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.1.1 ([f497634](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/f497634ff188a658d2710bb3cd76b140c9372fbd))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.2.0 ([845cd41](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/845cd41993f880f2394f80e01e5ebbdebbe588a3))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.3.0 ([90b7dae](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/90b7dae00831111571c0e141366795e3087bb749))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.4.0 ([5866d63](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/5866d631e04a072774712be6b8a5e0c8d959cd31))
+* **deps:** update danysk/build-check-deploy-gradle-action action to v3.5.0 ([7d0aadb](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/7d0aadb4fa1384c8071a24bfb63e8839c778d1c9))
+
+### General maintenance
+
+* add assert import ([be8ddc2](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/be8ddc29f94bdb7b0ced26b0393a35a633c6b042))
+* exclude node modules ([62a9b0c](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/62a9b0c4f09498b2967bd7d9685952c1b76f58de))
+* **release:** update gradle.properties .env versions to 1.4.2 [skip ci] ([2895af7](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/2895af7fedfce0da165d024e963e4661c1b90076))
+
 ## [1.4.2](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.1...1.4.2) (2024-07-05)
 
 
