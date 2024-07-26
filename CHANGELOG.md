@@ -1,3 +1,13 @@
+## [1.4.4](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.3...1.4.4) (2024-07-26)
+
+### Bug Fixes
+
+* add dedicated runtime for SCR ([cb07657](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/cb07657c6e7907b2101c92c6fa92491535d5e20d))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.4.3 [skip ci] ([965dfa3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/965dfa3c7ac271e6289563e96d6877c5921128cc))
+
 ## [1.4.3](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.2...1.4.3) (2024-07-26)
 
 ### Dependency updates
