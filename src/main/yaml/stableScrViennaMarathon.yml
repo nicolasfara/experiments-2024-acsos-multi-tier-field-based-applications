@@ -75,7 +75,7 @@ _programs:
       - time-distribution: 0.5
         type: Event
         actions:
-          - type: ModularizationRuntime
+          - type: ScrModularizationRuntime
             parameters: [ *scenario ]
 
   - program: &surrogateLeaderElection
