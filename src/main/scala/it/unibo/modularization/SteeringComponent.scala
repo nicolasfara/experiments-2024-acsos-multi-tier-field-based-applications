@@ -10,7 +10,7 @@ class SteeringComponent extends MyAggregateProgram {
     val isLeader = senseOr[Boolean]("isRegionLeader", false)
     val nodeRequiredIntervention = inputFromComponent("nodeRequiredIntervention", Option.empty[(ID, Position[_])])
 
-    mux(nodeRequiredIntervention.isDefined) {
+    if (nodeRequiredIntervention.isDefined) {
       val (nodeId, _) = nodeRequiredIntervention.get
       val potential = classicGradient(isLeader, nbrRange _) // This can be improved by reading the potential value from the environment...
       val distanceToEmergency = alchemistEnvironment.getDistanceBetweenNodes(alchemistEnvironment.getNodeByID(nodeId), alchemistEnvironment.getNodeByID(mid()))
@@ -21,13 +21,13 @@ class SteeringComponent extends MyAggregateProgram {
         Set(),
       )
       val candidate = rescuersInRegion.minByOption(_._2)
-      mux(candidate.isDefined) {
+      if (candidate.isDefined) {
         val rescuerId = candidate.get._1
         writeEnv("rescuerId", rescuerId)
-      } {
+      } else {
         // No candidate found
       }
-    } {
+    } else {
       // Do nothing here, no intervention required
     }
   }
