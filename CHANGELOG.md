@@ -1,3 +1,20 @@
+## [1.4.5](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.4...1.4.5) (2024-07-30)
+
+### Dependency updates
+
+* **deps:** update alchemist to v34.0.14 ([18c317a](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/18c317abec32c50a3a85a47b79ec505ab823eb15))
+* **deps:** update dependency scalafmt to v3.8.3 ([7cfccbe](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/7cfccbef50d684af1b0283bde916a5f1de4ed91e))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.93 ([8aa5ed6](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/8aa5ed68dbae6d56a60f43d3771f2b1e2be61f08))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.95 ([76baa6b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/76baa6bc69f6d25587fee8feac323501957328d3))
+
+### Documentation
+
+* update readme with reviewers comments ([ce2864b](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/ce2864be86c51ae381c23755e569af17e66a40f5))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.4.4 [skip ci] ([2dabb9c](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/commit/2dabb9c29e715b7942c96902c145d42e6e1c17e4))
+
 ## [1.4.4](https://github.com/nicolasfara/experiments-2024-acsos-multi-tier-field-based-applications/compare/1.4.3...1.4.4) (2024-07-26)
 
 ### Bug Fixes
