@@ -1,6 +1,6 @@
 [versions]
 alchemist = "34.1.2"
-kotlin = "2.0.10"
+kotlin = "2.0.20"
 scalacache = "0.28.0"
 
 [libraries]
